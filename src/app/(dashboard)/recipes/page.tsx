@@ -53,9 +53,9 @@ export default async function RecipesPage() {
   ]);
 
   const masterRecipes = assignments
-    .map((a) => a.recipe)
-    .filter((r) => r.active)
-    .map((r) => ({ ...r, isMaster: true }));
+    .map((a: (typeof assignments)[number]) => a.recipe)
+    .filter((r: (typeof assignments)[number]["recipe"]) => r.active)
+    .map((r: (typeof assignments)[number]["recipe"]) => ({ ...r, isMaster: true }));
 
   const recipes = [
     ...addCost(ownRecipes),

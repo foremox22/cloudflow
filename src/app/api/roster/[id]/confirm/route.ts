@@ -32,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const parsed = confirmSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const ownShiftIds = new Set(roster.shifts.map((s) => s.id));
+  const ownShiftIds = new Set(roster.shifts.map((s: (typeof roster.shifts)[number]) => s.id));
 
   const updated = await Promise.all(
     parsed.data.shifts

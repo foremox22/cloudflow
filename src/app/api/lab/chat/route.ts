@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
     db.allergen.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
   ]);
 
-  const ingredientsWithAllergens = cachedIngredients.map((i) => ({
+  const ingredientsWithAllergens = cachedIngredients.map((i: (typeof cachedIngredients)[number]) => ({
     name: i.name,
     unit: i.unit,
     costPerUnit: i.costPerUnit,
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
   const systemPrompt = buildSystemPrompt(ingredientsWithAllergens, allergens);
 
   // Build messages array for Claude (exclude current message — already in history)
-  const messages = history.slice(0, -1).map((m) => ({
+  const messages = history.slice(0, -1).map((m: (typeof history)[number]) => ({
     role: m.role === "USER" ? ("user" as const) : ("assistant" as const),
     content: m.content,
   }));

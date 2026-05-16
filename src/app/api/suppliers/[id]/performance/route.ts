@@ -47,7 +47,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     receivedOrders: received.length,
     onTimePct,
     avgPriceVariancePct: avgPriceVariance,
-    recentPos: pos.slice(0, 5).map((p) => ({
+    recentPos: pos.slice(0, 5).map((p: (typeof pos)[number]) => ({
       id: p.id,
       status: p.status,
       createdAt: p.createdAt,

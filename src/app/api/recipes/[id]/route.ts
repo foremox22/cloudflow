@@ -95,7 +95,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(ingredients
           ? {
               ingredients: {
-                create: ingredients.map((i) => ({
+                create: ingredients.map((i: (typeof ingredients)[number]) => ({
                   ingredientId: i.ingredientId,
                   quantity: i.quantity,
                   unit: i.unit as any,

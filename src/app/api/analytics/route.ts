@@ -130,11 +130,11 @@ export async function GET(req: NextRequest) {
   const kitchenWaste = wasteTxns.filter((t) => t.itemType === "KITCHEN");
   const wasteIngredients = kitchenWaste.length > 0
     ? await db.ingredient.findMany({
-        where: { id: { in: kitchenWaste.map((t) => t.itemId) } },
+        where: { id: { in: kitchenWaste.map((t: (typeof kitchenWaste)[number]) => t.itemId) } },
         select: { id: true, category: true, costPerUnit: true },
       })
     : [];
-  const wMap = new Map(wasteIngredients.map((i) => [i.id, i]));
+  const wMap = new Map(wasteIngredients.map((i: (typeof wasteIngredients)[number]) => [i.id, i]));
   const wasteCatMap = new Map<string, { qty: number; cost: number }>();
   for (const tx of kitchenWaste) {
     const ing = wMap.get(tx.itemId);
@@ -152,8 +152,8 @@ export async function GET(req: NextRequest) {
   // ── Recipe food costs ──
   const recipeFoodCosts = recipes
     .filter((r) => r.sellingPrice > 0)
-    .map((r) => {
-      const totalCost = r.ingredients.reduce((s, ri) => {
+    .map((r: (typeof recipes)[number]) => {
+      const totalCost = r.ingredients.reduce((s: number, ri: (typeof r.ingredients)[number]) => {
         const conv = convertUnit(ri.quantity, ri.unit, ri.ingredient.unit);
         const eff = conv / (ri.ingredient.yieldRate ?? 1);
         return s + eff * ri.ingredient.costPerUnit;

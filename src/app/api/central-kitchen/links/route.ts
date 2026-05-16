@@ -25,7 +25,7 @@ export async function GET() {
     });
     return NextResponse.json({
       mode: "ck",
-      linkedRestaurants: links.map((l) => ({ ...l.linkedRestaurant, linkedAt: l.createdAt })),
+      linkedRestaurants: links.map((l: (typeof links)[number]) => ({ ...l.linkedRestaurant, linkedAt: l.createdAt })),
       availableCKs: [],
     });
   }
@@ -36,15 +36,15 @@ export async function GET() {
     include: { restaurant: { select: { id: true, name: true, type: true } } },
   });
   const availableCKs = userMemberships
-    .filter((m) => m.restaurant.type === "CENTRAL_KITCHEN" && m.restaurantId !== restaurantId)
-    .map((m) => m.restaurant);
+    .filter((m: (typeof userMemberships)[number]) => m.restaurant.type === "CENTRAL_KITCHEN" && m.restaurantId !== restaurantId)
+    .map((m: (typeof userMemberships)[number]) => m.restaurant);
 
   const linkedCKLinks = await db.centralKitchenLink.findMany({
     where: { linkedRestaurantId: restaurantId },
     include: { centralKitchen: { select: { id: true, name: true } } },
     orderBy: { createdAt: "asc" },
   });
-  const linkedCKs = linkedCKLinks.map((l) => ({ ...l.centralKitchen, linkedAt: l.createdAt }));
+  const linkedCKs = linkedCKLinks.map((l: (typeof linkedCKLinks)[number]) => ({ ...l.centralKitchen, linkedAt: l.createdAt }));
 
   return NextResponse.json({ mode: "restaurant", linkedCKs, availableCKs });
 }

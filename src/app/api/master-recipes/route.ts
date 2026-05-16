@@ -29,7 +29,7 @@ async function getAdminRestaurantIds(userId: string): Promise<string[]> {
     where: { userId, role: "ADMIN" },
     select: { restaurantId: true },
   });
-  return memberships.map((m) => m.restaurantId);
+  return memberships.map((m: (typeof memberships)[number]) => m.restaurantId);
 }
 
 export async function GET() {
@@ -57,11 +57,11 @@ export async function GET() {
     orderBy: { updatedAt: "desc" },
   });
 
-  const withCost = recipes.map((r) => ({
+  const withCost = recipes.map((r: (typeof recipes)[number]) => ({
     ...r,
     costPerServing:
       r.servings > 0
-        ? r.ingredients.reduce((sum, ri) => {
+        ? r.ingredients.reduce((sum: number, ri: (typeof r.ingredients)[number]) => {
             const baseQty = convertToIngredientUnit(ri.quantity, ri.unit, ri.ingredient.unit);
             return sum + ri.ingredient.costPerUnit * baseQty / (ri.ingredient.yieldRate ?? 1);
           }, 0) / r.servings
@@ -96,8 +96,8 @@ export async function POST(req: Request) {
       isMaster: true,
       category: data.category as any,
       createdById: session.user.id,
-      ingredients: { create: ingredients.map((i) => ({ ingredientId: i.ingredientId, quantity: i.quantity, unit: i.unit as any })) },
-      allergens: { create: allergenIds.map((id) => ({ allergenId: id })) },
+      ingredients: { create: ingredients.map((i: (typeof ingredients)[number]) => ({ ingredientId: i.ingredientId, quantity: i.quantity, unit: i.unit as any })) },
+      allergens: { create: allergenIds.map((id: string) => ({ allergenId: id })) },
     },
     include: {
       createdBy: { select: { id: true, name: true } },

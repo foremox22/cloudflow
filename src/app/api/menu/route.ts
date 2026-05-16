@@ -33,9 +33,9 @@ export async function GET() {
     orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { name: "asc" }],
   });
 
-  const mapped = items.map((item) => ({
+  const mapped = items.map((item: (typeof items)[number]) => ({
     ...item,
-    allergenNames: item.recipe?.allergens.map((a) => a.allergen.name) ?? [],
+    allergenNames: item.recipe?.allergens.map((a: NonNullable<typeof item.recipe>["allergens"][number]) => a.allergen.name) ?? [],
     dietaryTags: item.recipe?.dietaryTags ?? [],
     recipe: item.recipe
       ? { id: item.recipe.id, name: item.recipe.name, sellingPrice: item.recipe.sellingPrice }

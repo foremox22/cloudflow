@@ -40,7 +40,7 @@ export async function notify(
   });
   if (members.length === 0) return;
   await db.notification.createMany({
-    data: members.map((m) => ({
+    data: members.map((m: (typeof members)[number]) => ({
       restaurantId,
       userId: m.userId,
       type: type as any,

@@ -35,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     take: 6,
   });
 
-  const menuItemIds = grouped.map((g) => g.menuItemId);
+  const menuItemIds = grouped.map((g: (typeof grouped)[number]) => g.menuItemId);
   const menuItems = menuItemIds.length
     ? await db.menuItem.findMany({
         where: { id: { in: menuItemIds }, available: true },
@@ -44,8 +44,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     : [];
 
   const topItems = grouped
-    .map((g) => {
-      const item = menuItems.find((m) => m.id === g.menuItemId);
+    .map((g: (typeof grouped)[number]) => {
+      const item = menuItems.find((m: (typeof menuItems)[number]) => m.id === g.menuItemId);
       if (!item) return null;
       return { ...item, count: g._count.menuItemId };
     })

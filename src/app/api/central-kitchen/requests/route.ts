@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       notes,
       createdById: session.user.id,
       items: {
-        create: items.map((i) => ({
+        create: items.map((i: (typeof items)[number]) => ({
           ckIngredientId: i.ckIngredientId,
           ingredientName: i.ingredientName,
           unit: i.unit as any,

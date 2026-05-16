@@ -7,7 +7,7 @@ async function getAdminRestaurantIds(userId: string): Promise<string[]> {
     where: { userId, role: "ADMIN" },
     select: { restaurantId: true },
   });
-  return memberships.map((m) => m.restaurantId);
+  return memberships.map((m: (typeof memberships)[number]) => m.restaurantId);
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {

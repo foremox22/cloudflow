@@ -65,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       supplierName: po.supplier.name,
       supplierEmail: po.supplier.email,
       poId: po.id,
-      lineItems: po.lineItems.map((l) => ({
+      lineItems: po.lineItems.map((l: (typeof po.lineItems)[number]) => ({
         ingredientName: l.ingredient.name,
         quantity: l.quantity,
         unit: l.ingredient.unit,

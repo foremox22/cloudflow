@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   if (todayRoutines.length === 0) return NextResponse.json({ created: 0 });
 
   // Batch fetch existing tasks for all relevant ingredients (eliminates N+1)
-  const ingredientIds = todayRoutines.map((r) => r.ingredientId);
+  const ingredientIds = todayRoutines.map((r: (typeof todayRoutines)[number]) => r.ingredientId);
   const existingTasks = await db.prepTask.findMany({
     where: {
       restaurantId,
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     },
     select: { ingredientId: true },
   });
-  const existingIngredientIds = new Set(existingTasks.map((t) => t.ingredientId));
+  const existingIngredientIds = new Set(existingTasks.map((t: (typeof existingTasks)[number]) => t.ingredientId));
 
   // Filter to routines without existing tasks
   const routinesToCreate = todayRoutines.filter((r) => !existingIngredientIds.has(r.ingredientId));

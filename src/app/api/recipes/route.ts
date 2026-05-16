@@ -69,13 +69,13 @@ export async function GET(req: Request) {
   ]);
 
   const masterRecipes = assignments
-    .map((a) => a.recipe)
-    .filter((r) => r.active && (!category || r.category === (category as any)))
-    .map((r) => ({ ...r, isMaster: true }));
+    .map((a: (typeof assignments)[number]) => a.recipe)
+    .filter((r: (typeof assignments)[number]["recipe"]) => r.active && (!category || r.category === (category as any)))
+    .map((r: (typeof assignments)[number]["recipe"]) => ({ ...r, isMaster: true }));
 
   const all = [
-    ...ownRecipes.map((r) => ({ ...r, costPerServing: calcCost(r) })),
-    ...masterRecipes.map((r) => ({ ...r, costPerServing: calcCost(r) })),
+    ...ownRecipes.map((r: (typeof ownRecipes)[number]) => ({ ...r, costPerServing: calcCost(r) })),
+    ...masterRecipes.map((r: (typeof masterRecipes)[number]) => ({ ...r, costPerServing: calcCost(r) })),
   ];
 
   return NextResponse.json(all);
@@ -107,14 +107,14 @@ export async function POST(req: Request) {
       category: data.category as any,
       createdById: session.user.id,
       ingredients: {
-        create: ingredients.map((i) => ({
+        create: ingredients.map((i: (typeof ingredients)[number]) => ({
           ingredientId: i.ingredientId,
           quantity: i.quantity,
           unit: i.unit as any,
         })),
       },
       allergens: {
-        create: allergenIds.map((id) => ({ allergenId: id })),
+        create: allergenIds.map((id: string) => ({ allergenId: id })),
       },
     },
     include: {

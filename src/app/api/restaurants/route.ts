@@ -25,7 +25,7 @@ export async function GET() {
   });
 
   return NextResponse.json(
-    memberships.map((m) => ({ ...m.restaurant, role: m.role, active: m.restaurantId === activeId }))
+    memberships.map((m: (typeof memberships)[number]) => ({ ...m.restaurant, role: m.role, active: m.restaurantId === activeId }))
   );
 }
 

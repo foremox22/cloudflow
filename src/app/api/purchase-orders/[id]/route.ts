@@ -61,7 +61,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const po = await db.$transaction(async (prisma) => {
     if (lineItems) {
       await prisma.poLineItem.deleteMany({ where: { poId: id } });
-      await prisma.poLineItem.createMany({ data: lineItems.map((l) => ({ ...l, poId: id })) });
+      await prisma.poLineItem.createMany({ data: lineItems.map((l: (typeof lineItems)[number]) => ({ ...l, poId: id })) });
     }
 
     return prisma.purchaseOrder.update({

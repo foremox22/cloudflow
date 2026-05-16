@@ -41,7 +41,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const weekLabel = new Date(roster.weekStart).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
   // Upsert invites first (sequential, needed before parallel email/notify)
-  const inviteMap = new Map(roster.invites.map((i) => [i.userId, i]));
+  const inviteMap = new Map(roster.invites.map((i: (typeof roster.invites)[number]) => [i.userId, i]));
   for (const [userId] of userMap) {
     if (!inviteMap.has(userId)) {
       const invite = await db.rosterInvite.create({
@@ -65,7 +65,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
           staffEmail: user.email,
           weekStart: roster.weekStart,
           confirmUrl,
-          shifts: userShifts.map((s) => ({
+          shifts: userShifts.map((s: (typeof userShifts)[number]) => ({
             date: s.date,
             startTime: s.startTime,
             endTime: s.endTime,

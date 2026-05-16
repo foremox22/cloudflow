@@ -49,11 +49,13 @@ export default async function MasterRecipesPage() {
     db.allergen.findMany({ orderBy: { name: "asc" } }),
   ]);
 
-  const recipes = rawRecipes.map((r) => ({
+  type RawRecipe = (typeof rawRecipes)[number];
+  type RecipeIngredient = RawRecipe["ingredients"][number];
+  const recipes = rawRecipes.map((r: RawRecipe) => ({
     ...r,
     costPerServing:
       r.servings > 0
-        ? r.ingredients.reduce((sum, ri) => {
+        ? r.ingredients.reduce((sum: number, ri: RecipeIngredient) => {
             const baseQty = convertToIngredientUnit(ri.quantity, ri.unit, ri.ingredient.unit);
             return sum + ri.ingredient.costPerUnit * baseQty / (ri.ingredient.yieldRate ?? 1);
           }, 0) / r.servings

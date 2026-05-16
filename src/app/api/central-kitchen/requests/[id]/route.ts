@@ -74,7 +74,7 @@ export async function PATCH(
     if (items) {
       await tx.distributionItem.deleteMany({ where: { requestId: id } });
       await tx.distributionItem.createMany({
-        data: items.map((i) => ({
+        data: items.map((i: (typeof items)[number]) => ({
           requestId: id,
           ckIngredientId: i.ckIngredientId,
           ingredientName: i.ingredientName,

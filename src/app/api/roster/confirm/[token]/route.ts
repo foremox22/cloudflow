@@ -34,7 +34,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
     weekStart: invite.roster.weekStart,
     notes: invite.roster.notes,
     user: invite.user,
-    shifts: myShifts.map((s) => ({
+    shifts: myShifts.map((s: (typeof myShifts)[number]) => ({
       id: s.id,
       date: s.date,
       startTime: s.startTime,
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const myShiftIds = new Set(
-    invite.roster.shifts.filter((s) => s.userId === invite.userId).map((s) => s.id)
+    invite.roster.shifts.filter((s: (typeof invite.roster.shifts)[number]) => s.userId === invite.userId).map((s: (typeof invite.roster.shifts)[number]) => s.id)
   );
 
   for (const entry of parsed.data.shifts) {

@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const entries = parsed.data.entries.map((e) => {
+  const entries = parsed.data.entries.map((e: (typeof parsed.data.entries)[number]) => {
     const baseAmount = Math.round(e.hoursWorked * e.hourlyRate * 100) / 100;
     const netAmount  = Math.round((baseAmount + e.bonus - e.deductions) * 100) / 100;
     return { ...e, baseAmount, netAmount };
