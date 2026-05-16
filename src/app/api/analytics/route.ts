@@ -118,7 +118,8 @@ export async function GET(req: NextRequest) {
     e.revenue += item.quantity * item.unitPrice;
   }
   const sorted = Array.from(itemMap.values()).sort((a, b) => b.qty - a.qty);
-  const topItems = sorted.slice(0, 10).map((i) => ({ ...i, revenue: Math.round(i.revenue * 100) / 100 }));
+  type SortedItem = (typeof sorted)[number];
+  const topItems = sorted.slice(0, 10).map((i: SortedItem) => ({ ...i, revenue: Math.round(i.revenue * 100) / 100 }));
   const bottomItems = sorted.length > 5 ? sorted.slice(-5).reverse() : [];
 
   // ── Stock valuation ──
@@ -130,7 +131,8 @@ export async function GET(req: NextRequest) {
   const outOfStock = ingredients.filter((i: Ingredient) => i.currentStock <= 0).length;
 
   // ── Waste by category ──
-  const kitchenWaste = wasteTxns.filter((t) => t.itemType === "KITCHEN");
+  type WasteTxn = (typeof wasteTxns)[number];
+  const kitchenWaste = wasteTxns.filter((t: WasteTxn) => t.itemType === "KITCHEN");
   const wasteIngredients = kitchenWaste.length > 0
     ? await db.ingredient.findMany({
         where: { id: { in: kitchenWaste.map((t: (typeof kitchenWaste)[number]) => t.itemId) } },
