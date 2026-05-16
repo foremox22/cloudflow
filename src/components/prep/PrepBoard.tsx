@@ -452,7 +452,7 @@ function TaskCard({ task, onStart, onComplete, onCancel, urgent = false, done = 
   urgent?: boolean;
   done?: boolean;
 }) {
-  const cfg = STATUS_CONFIG[task.status];
+  const cfg = STATUS_CONFIG[task.status as keyof typeof STATUS_CONFIG];
   const scheduled = task.scheduledFor ? new Date(task.scheduledFor).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" }) : null;
 
   return (
