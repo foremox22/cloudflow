@@ -27,7 +27,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
     return NextResponse.json({ error: "Invite link has expired" }, { status: 410 });
   }
 
-  const myShifts = invite.roster.shifts.filter((s) => s.userId === invite.userId);
+  type RosterShift = (typeof invite.roster.shifts)[number];
+  const myShifts = invite.roster.shifts.filter((s: RosterShift) => s.userId === invite.userId);
 
   return NextResponse.json({
     rosterWeekId: invite.rosterId,

@@ -17,9 +17,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     take: 50,
   });
 
-  const received = pos.filter((p) => p.status === "RECEIVED");
+  type PurchaseOrder = (typeof pos)[number];
+  const received = pos.filter((p: PurchaseOrder) => p.status === "RECEIVED");
   const onTime = received.filter(
-    (p) => p.expectedAt && p.receivedAt && p.receivedAt <= p.expectedAt
+    (p: PurchaseOrder) => p.expectedAt && p.receivedAt && p.receivedAt <= p.expectedAt
   );
   const onTimePct = received.length > 0 ? Math.round((onTime.length / received.length) * 100) : null;
 
@@ -53,7 +54,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       createdAt: p.createdAt,
       expectedAt: p.expectedAt,
       receivedAt: p.receivedAt,
-      total: p.lineItems.reduce((s: number, l) => s + l.quantity * l.unitPrice, 0),
+      total: p.lineItems.reduce((s: number, l: (typeof p.lineItems)[number]) => s + l.quantity * l.unitPrice, 0),
     })),
   });
 }

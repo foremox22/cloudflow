@@ -51,9 +51,10 @@ export async function GET() {
     }
   }
 
+  type DemandEntry = NonNullable<ReturnType<typeof demandMap.get>>;
   const demand = Array.from(demandMap.values())
-    .sort((a, b) => b.totalQty - a.totalQty)
-    .map((d) => ({
+    .sort((a: DemandEntry, b: DemandEntry) => b.totalQty - a.totalQty)
+    .map((d: DemandEntry) => ({
       ...d,
       totalQty: Math.round(d.totalQty * 100) / 100,
       shortfall: Math.max(0, Math.round((d.totalQty - d.currentStock) * 100) / 100),
