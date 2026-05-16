@@ -94,6 +94,10 @@ const raw = await db.recipe.findMany({...});
 const result = raw.map((r: (typeof raw)[number]) => ({ ...r, extra: true }));
 ```
 
+// .filter() / .sort() before or after .map() drops the type for the whole chain — type EVERY callback
+type FoodCost = { foodCostPct: number };
+items.filter((r: Recipe) => r.active).map((r: Recipe) => ({...})).sort((a: FoodCost, b: FoodCost) => b.foodCostPct - a.foodCostPct)
+
 // .filter() before .map() drops the type for the whole chain — type EVERY callback in the chain
 type Recipe = (typeof recipes)[number];
 recipes.filter((r: Recipe) => r.active).map((r: Recipe) => ({ ...r }))
