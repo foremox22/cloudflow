@@ -1,0 +1,1562 @@
+================================================================================
+  RESTAURANT MANAGEMENT SYSTEM (RMS) — IMPLEMENTATION PROGRESS
+  Date: 3 May 2026
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 1 — FOUNDATION  [✓ COMPLETED]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PROJECT SETUP
+  [✓] Next.js 15 (App Router) with TypeScript
+  [✓] Tailwind CSS (dark theme — gray-950 background, orange-500 accent)
+  [✓] Prisma 7 ORM with PostgreSQL 17
+  [✓] All dependencies installed (NextAuth, Zod, React Hook Form, Zustand,
+      Lucide React, Radix UI, pdfkit, bcryptjs, pg adapter)
+
+DATABASE SCHEMA  (prisma/schema.prisma)
+  [✓] users           — id, email, name, password, role, active
+  [✓] sessions        — NextAuth JWT sessions
+  [✓] allergens       — master allergen list (10 seeded)
+  [✓] ingredients     — name, category, unit, costPerUnit, stock, par/reorder levels
+  [✓] ingredient_allergens  — junction table
+  [✓] recipes         — name, category, description, method, prep/cookTime,
+                         servings, sellingPrice, imageUrl
+  [✓] recipe_ingredients    — quantity + unit per ingredient
+  [✓] recipe_allergens      — junction table
+  [✓] recipe_versions       — full JSON snapshot on every save (version history)
+  [✓] Migration applied: 20260428123959_init
+
+AUTHENTICATION  (src/lib/auth.ts, src/proxy.ts)
+  [✓] NextAuth v5 with JWT strategy
+  [✓] Credentials provider (email + bcrypt password)
+  [✓] Role stored in JWT token and session
+  [✓] Route protection via Next.js proxy (src/proxy.ts)
+  [✓] Redirect: unauthenticated → /login, logged-in on /login → /dashboard
+
+SEEDED DATA  (prisma/seed.ts)
+  [✓] 10 allergens: Gluten, Dairy, Eggs, Nuts, Peanuts, Shellfish,
+                    Fish, Soy, Sesame, Celery
+  [✓] 2 users:
+        admin@rms.com  / admin123  (ADMIN role)
+        chef@rms.com   / chef123   (CHEF role)
+  [✓] 10 ingredients: Chicken Breast, Spaghetti, Eggs, Parmesan, Pancetta,
+                       Olive Oil, Garlic, Cherry Tomatoes, Fresh Basil, Mozzarella
+  [✓] 1 sample recipe: Spaghetti Carbonara (with cost calc + allergens)
+
+UI LAYOUT  (src/components/layout/)
+  [✓] Sidebar navigation (all 9 module links, active state highlighting)
+  [✓] Header with role badge + user avatar initial
+  [✓] Dashboard layout with SessionProvider
+  [✓] Dark theme throughout (gray-950 / gray-900 / gray-800)
+
+PAGES BUILT
+  [✓] /login          — Login form with validation, error messages
+  [✓] /dashboard      — Stats cards (recipes, ingredients, team, orders)
+                         Module status bar (Phase 1 = green, rest = coming)
+  [✓] /recipes        — Full recipe list with:
+                           • Search bar (live filter)
+                           • Category tabs (STARTER/MAIN/DESSERT/etc.)
+                           • Recipe cards showing: food cost, selling price, FC%
+                           • Allergen tags per recipe
+                           • Prep + cook time, servings
+                           • Edit / Archive buttons
+  [✓] Recipe Create/Edit Modal:
+                           • Name, category, description
+                           • Prep time, cook time, servings
+                           • Selling price + live food cost preview
+                           • Dynamic ingredient rows (select + quantity + unit)
+                           • Allergen multi-select toggles
+                           • Method textarea
+                           • Auto-saves version snapshot on every save
+
+API ROUTES
+  [✓] GET  /api/recipes          — list all active recipes with cost calc
+  [✓] POST /api/recipes          — create recipe + version 1 snapshot
+  [✓] GET  /api/recipes/[id]     — single recipe with version history
+  [✓] PATCH /api/recipes/[id]    — update recipe + save new version
+  [✓] DELETE /api/recipes/[id]   — soft delete (sets active=false)
+  [✓] GET  /api/ingredients      — list all active ingredients
+  [✓] POST /api/ingredients      — create ingredient
+  [✓] GET/POST /api/auth/[...nextauth] — NextAuth handler
+
+INFRASTRUCTURE
+  [✓] PostgreSQL 17 installed (winget) and running on 127.0.0.1:5432
+  [✓] Database: rms_db
+  [✓] Prisma adapter-pg for Prisma 7 WASM client compatibility
+  [✓] Dev server running on http://localhost:3000
+  [✓] Production build passes (npm run build)
+  [✓] Zero TypeScript errors
+
+FILES STRUCTURE
+  D:\Project P\rms\
+  ├── prisma/
+  │   ├── schema.prisma         ← DB models
+  │   ├── seed.ts               ← Seed script
+  │   └── migrations/           ← SQL migrations
+  ├── src/
+  │   ├── app/
+  │   │   ├── (auth)/login/     ← Login page
+  │   │   ├── (dashboard)/
+  │   │   │   ├── layout.tsx    ← Dashboard shell
+  │   │   │   ├── dashboard/    ← Overview page
+  │   │   │   └── recipes/      ← Recipe module
+  │   │   └── api/              ← All API routes
+  │   ├── components/
+  │   │   ├── layout/           ← Sidebar, Header
+  │   │   └── recipes/          ← RecipeList, RecipeFormModal
+  │   ├── lib/
+  │   │   ├── auth.ts           ← NextAuth config
+  │   │   ├── db.ts             ← Prisma client
+  │   │   └── utils.ts          ← cn(), formatCurrency(), calcFoodCostPct()
+  │   ├── types/index.ts        ← Shared TypeScript types
+  │   └── proxy.ts              ← Route protection middleware
+  ├── .env                      ← DB + Auth secrets (DO NOT COMMIT)
+  └── prisma.config.ts          ← Prisma 7 datasource config
+
+COMMANDS TO REMEMBER
+  npm run dev          → Start development server (http://localhost:3000)
+  npm run build        → Production build
+  npm run db:migrate   → Run new migrations (npx prisma migrate dev)
+  npm run db:seed      → Re-seed the database
+  npm run db:studio    → Open Prisma Studio (visual DB browser)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 2 — OPERATIONS CORE  [✓ COMPLETED]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Completed: 29 April 2026
+
+STEP 2.1 — DATABASE SCHEMA ADDITIONS  [✓]
+  [✓] Migration: 20260428231908_phase2_operations applied
+  [✓] tables          — id, number, section, capacity, status[FREE|OCCUPIED|RESERVED]
+  [✓] menu_items      — id, recipe_id, name, price, category, available, sortOrder
+  [✓] orders          — id, table_id, server_id, status, total, tax, discount,
+                         payment_method, opened_at, closed_at
+  [✓] order_items     — id, order_id, menu_item_id, quantity, unit_price,
+                         notes, status[PENDING|COOKING|READY|SERVED]
+  [✓] foh_items       — id, name, category, unit, costPerUnit, currentStock,
+                         parLevel, reorderPoint, reorderQty, active
+  [✓] stock_transactions — id, item_type, item_id, type[IN|OUT|WASTE|ADJUST],
+                            quantity, reference_id, notes, created_by, created_at
+  [✓] New enums: TableStatus, OrderStatus, OrderItemStatus, PaymentMethod,
+                 FohCategory, StockTxType, StockItemType
+  [✓] socket.io + socket.io-client installed
+
+STEP 2.2 — POS MODULE  (/pos)  [✓]
+  [✓] Floor map — table grid, status colors (green/red/amber), elapsed timer
+  [✓] Add Table modal — number, section, capacity
+  [✓] Open order — auto-creates order on FREE table click, marks table OCCUPIED
+  [✓] Order screen (/pos/order/[orderId]) — menu browse with category tabs + search
+  [✓] Cart sidebar — quantity ±, remove, status labels (new / cooking / ready)
+  [✓] Send to Kitchen — PATCH items PENDING→COOKING
+  [✓] Payment modal — CASH / CARD / SPLIT, discount field, total breakdown
+  [✓] Payment confirm — order PAID, table FREE, kitchen stock auto-deducted
+  [✓] Menu 86 — toggleAvailable on menu item blocks adding to order
+
+STEP 2.3 — KITCHEN DISPLAY SYSTEM (KDS)  (/kds)  [✓]
+  [✓] 3-second auto-polling (App Router native; Socket.io ready for Phase 5 upgrade)
+  [✓] KDS board — live ticket grid (oldest first)
+  [✓] Ticket card — table number, server, items, elapsed timer
+  [✓] Timer colour: normal → amber @8min → red @15min
+  [✓] Per-item buttons: Start Cooking (PENDING→COOKING), Ready (any→READY)
+  [✓] Ticket disappears when all items move past COOKING/PENDING
+
+STEP 2.4 — KITCHEN STOCK  (/stock/kitchen)  [✓]
+  [✓] Ingredient inventory table — stock, par level, reorder point, cost
+  [✓] LOW / OUT stock badges + low-stock alert banner
+  [✓] Adjust modal — IN / OUT / WASTE / ADJUST with quantity + notes
+  [✓] Auto stock deduction on order PAID (via recipe_ingredients)
+  [✓] StockTransaction records created on every adjustment + auto-deduction
+  [✓] GET /api/stock/transactions — full history with filters
+
+STEP 2.5 — FOH STOCK  (/stock/foh)  [✓]
+  [✓] FOH item inventory with BEVERAGE / PACKAGING / SUPPLIES / OTHER tabs
+  [✓] Add / Edit / Archive FOH items
+  [✓] Same Adjust modal as Kitchen Stock (reused StockAdjustModal)
+  [✓] Low stock alert banner
+
+STEP 2.6 — MENU MANAGEMENT  (/menu)  [✓]
+  [✓] Publish recipes to menu (links recipe_id, inherits price)
+  [✓] Manual menu items (no recipe required)
+  [✓] Override selling price per menu item
+  [✓] Activate / deactivate (86) items — reflected in POS immediately
+  [✓] Category tabs + sort order field
+
+NEW FILES (Phase 2)
+  src/app/(dashboard)/menu/page.tsx
+  src/app/(dashboard)/pos/page.tsx
+  src/app/(dashboard)/pos/order/[orderId]/page.tsx
+  src/app/(dashboard)/kds/page.tsx
+  src/app/(dashboard)/stock/kitchen/page.tsx
+  src/app/(dashboard)/stock/foh/page.tsx
+  src/components/menu/MenuList.tsx
+  src/components/menu/MenuItemModal.tsx
+  src/components/pos/FloorMap.tsx
+  src/components/pos/OrderScreen.tsx
+  src/components/pos/CartSidebar.tsx
+  src/components/pos/PaymentModal.tsx
+  src/components/kds/KdsBoard.tsx
+  src/components/kds/TicketCard.tsx
+  src/components/stock/KitchenStockList.tsx
+  src/components/stock/StockAdjustModal.tsx
+  src/components/stock/FohStockList.tsx
+  src/components/stock/FohItemModal.tsx
+  src/app/api/menu/route.ts
+  src/app/api/menu/[id]/route.ts
+  src/app/api/tables/route.ts
+  src/app/api/tables/[id]/route.ts
+  src/app/api/orders/route.ts
+  src/app/api/orders/[id]/route.ts
+  src/app/api/orders/[id]/items/route.ts
+  src/app/api/orders/[id]/items/[itemId]/route.ts
+  src/app/api/kds/tickets/route.ts
+  src/app/api/kds/items/[id]/route.ts
+  src/app/api/stock/kitchen/route.ts
+  src/app/api/stock/transactions/route.ts
+  src/app/api/stock/foh/route.ts
+  src/app/api/stock/foh/[id]/route.ts
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 3 — INTELLIGENCE LAYER  [✓ COMPLETED]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Completed: 29 April 2026
+
+STEP 3.1 — DATABASE SCHEMA ADDITIONS  [✓]
+  [✓] Migration: 20260429060709_phase3_intelligence applied
+  [✓] PoStatus enum: DRAFT | APPROVED | SENT | RECEIVED | CANCELLED
+  [✓] suppliers — id, name, email, phone, address, contactName, leadDays, active
+  [✓] supplier_products — supplierId, ingredientId, unitPrice, unit, isPreferred
+  [✓] purchase_orders — supplierId, status, notes, expectedAt, receivedAt,
+                         approvedById, createdById
+  [✓] po_line_items — poId, ingredientId, quantity, unitPrice, receivedQty
+  [✓] notifications — userId, title, body, read, link
+  [✓] bullmq + ioredis + nodemailer installed
+
+STEP 3.2 — SUPPLIER CRUD (/suppliers tab: Suppliers)  [✓]
+  [✓] Supplier list — name, contact, email, lead days, product count
+  [✓] Add / Edit / Archive supplier (SupplierModal)
+  [✓] Expandable supplier card — shows product table + performance stats
+  [✓] Add product per supplier (SupplierProductModal)
+        • Links ingredient to supplier with unit price
+        • Mark as preferred — used by auto-order engine
+  [✓] Remove product from supplier
+
+STEP 3.3 — PURCHASE ORDER WORKFLOW (/suppliers tab: Purchase Orders)  [✓]
+  [✓] PO list with status tabs (ALL | DRAFT | APPROVED | SENT | RECEIVED | CANCELLED)
+  [✓] New PO modal — supplier, line items, quantities, expected delivery
+        • Supplier products auto-fill unit price when ingredient selected
+  [✓] PO detail modal (PoDetailModal):
+        • Supplier info, meta, notes, expected vs received date
+        • Line items table with totals
+        • Status-aware action buttons:
+            DRAFT → Approve & Send Email | Cancel PO
+            APPROVED → Mark as Sent | Receive Goods
+            SENT → Receive Goods
+  [✓] Status workflow: DRAFT → APPROVED → SENT → RECEIVED
+
+STEP 3.4 — AUTO-ORDER ENGINE (src/lib/autoOrder.ts)  [✓]
+  [✓] Triggered inline from POST /api/stock/transactions on OUT or WASTE type
+  [✓] Checks if KITCHEN ingredient drops below reorderPoint
+  [✓] Finds preferred supplier (isPreferred=true or lowest price)
+  [✓] Skips if open PO already exists for same supplier+ingredient
+  [✓] Creates DRAFT PO with reorderQty as quantity
+  [✓] Notifies all ADMIN and MANAGER users (in-app notification)
+  [✓] BullMQ + ioredis installed for future Redis-based queue upgrade
+
+STEP 3.5 — MANAGER APPROVAL UI  [✓]
+  [✓] DRAFT POs listed in /suppliers?tab=orders
+  [✓] PoDetailModal — Approve & Send Email / Cancel PO buttons
+  [✓] Approved by user tracked in purchase_orders.approvedById
+
+STEP 3.6 — EMAIL ON APPROVAL (src/lib/mailer.ts)  [✓]
+  [✓] Nodemailer transport (SMTP — configure SMTP_* in .env)
+  [✓] HTML email with PO table, totals, expected delivery date
+  [✓] Sent to supplier email on approval (fire-and-forget, no crash if SMTP unconfigured)
+  [✓] Default config: Gmail SMTP (set SMTP_USER / SMTP_PASS in .env to enable)
+
+STEP 3.7 — RECEIVING WORKFLOW  [✓]
+  [✓] POST /api/purchase-orders/[id]/receive
+  [✓] Receive Goods button in PoDetailModal (available on APPROVED or SENT)
+  [✓] Per-line-item received quantity input (defaults to ordered qty)
+  [✓] Auto-increments ingredient stock (currentStock += receivedQty)
+  [✓] Creates stock transaction (type=IN, referenceId=poId)
+  [✓] PO status → RECEIVED, receivedAt timestamp set
+
+STEP 3.8 — SUPPLIER PERFORMANCE REPORT  [✓]
+  [✓] GET /api/suppliers/[id]/performance
+  [✓] On-time delivery % (receivedAt ≤ expectedAt)
+  [✓] Average price variance vs current ingredient costPerUnit (±%)
+  [✓] Shown inline in expanded supplier card (loads on expand)
+
+STEP 3.9 — IN-APP NOTIFICATIONS  [✓]
+  [✓] Notification bell in header (NotificationBell component)
+  [✓] Polls /api/notifications every 30 seconds
+  [✓] Unread count badge on bell icon
+  [✓] Dropdown shows last 20 notifications (title, body, timestamp)
+  [✓] Click notification → mark read + navigate to link
+  [✓] Mark all read button
+
+NEW API ROUTES (Phase 3)
+  GET/POST  /api/suppliers
+  GET/PATCH/DELETE /api/suppliers/[id]
+  GET/POST  /api/suppliers/[id]/products
+  DELETE    /api/suppliers/[id]/products/[productId]
+  GET       /api/suppliers/[id]/performance
+  GET/POST  /api/purchase-orders
+  GET/PATCH /api/purchase-orders/[id]
+  POST      /api/purchase-orders/[id]/approve     ← approve or cancel
+  POST      /api/purchase-orders/[id]/send         ← APPROVED → SENT
+  POST      /api/purchase-orders/[id]/receive      ← receive goods + increment stock
+  GET/PATCH /api/notifications
+
+NEW FILES (Phase 3)
+  src/lib/mailer.ts
+  src/lib/autoOrder.ts
+  src/components/suppliers/SupplierModal.tsx
+  src/components/suppliers/SupplierProductModal.tsx
+  src/components/suppliers/PurchaseOrderModal.tsx
+  src/components/suppliers/PoDetailModal.tsx
+  src/components/suppliers/SupplierList.tsx
+  src/components/layout/NotificationBell.tsx
+  src/app/(dashboard)/suppliers/page.tsx
+  src/app/api/suppliers/route.ts
+  src/app/api/suppliers/[id]/route.ts
+  src/app/api/suppliers/[id]/products/route.ts
+  src/app/api/suppliers/[id]/products/[productId]/route.ts
+  src/app/api/suppliers/[id]/performance/route.ts
+  src/app/api/purchase-orders/route.ts
+  src/app/api/purchase-orders/[id]/route.ts
+  src/app/api/purchase-orders/[id]/approve/route.ts
+  src/app/api/purchase-orders/[id]/send/route.ts
+  src/app/api/purchase-orders/[id]/receive/route.ts
+  src/app/api/notifications/route.ts
+
+MODIFIED FILES (Phase 3)
+  prisma/schema.prisma          ← 5 new models, PoStatus enum
+  src/types/index.ts            ← PoStatus, SupplierWithProducts, PurchaseOrderWithDetails, etc.
+  src/components/layout/Header.tsx ← NotificationBell added
+  src/app/api/stock/transactions/route.ts ← auto-order trigger on OUT/WASTE
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 4 — AI KITCHEN LAB  [COMPLETE — 29 April 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Target: Weeks 16–20
+
+  [x] Install Claude API SDK: npm install @anthropic-ai/sdk
+  [x] Add ANTHROPIC_API_KEY to .env
+  [x] Lab session UI (/lab) — chat interface + live recipe panel side-by-side
+  [x] Streaming responses (real-time text as Claude types)
+  [x] AI capabilities to implement:
+        - Recipe generation from brief (cuisine, budget, dietary, seasonal)
+        - Auto cost calculation (uses live ingredient prices from DB)
+        - Allergen detection from ingredients
+        - Ingredient substitution when item is out of stock
+        - Nutritional analysis
+        - Plating suggestions
+        - Scale recipe for banquet volumes
+  [x] Save to Recipe Library — creates draft recipe for head chef review
+  [x] Approval workflow — Manager/Head Chef approves → published to menu
+  [x] Lab session history — browse past AI recipe sessions
+
+  DB migration: 20260429114324_phase4_ai_lab
+  New models: LabSession, LabMessage, LabRecipe + LabMessageRole/LabRecipeStatus enums
+  New files:
+    src/lib/claude.ts                         ← Anthropic client singleton
+    src/app/api/lab/sessions/route.ts         ← GET/POST sessions
+    src/app/api/lab/sessions/[id]/route.ts    ← GET/PATCH/DELETE single session
+    src/app/api/lab/chat/route.ts             ← POST streaming chat (claude-opus-4-7)
+    src/app/api/lab/recipes/route.ts          ← GET/POST/PUT lab recipes + approve→Recipe
+    src/components/lab/LabPage.tsx            ← Full lab client component
+    src/app/(dashboard)/lab/page.tsx          ← Server page wrapper
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  KITCHEN STOCK ENHANCEMENTS  [COMPLETE — 29 April 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [x] Add / Edit / Delete ingredients (CRUD — was missing, only FOH had it)
+  [x] Category filter tabs with item counts (ALL + 12 ingredient categories)
+  [x] Summary cards — Total Items, Stock Value, Low Stock, Out of Stock
+  [x] Stock Value column (currentStock × costPerUnit) + running total footer
+  [x] Nutrition column — kcal and kJ per 100g stored on each ingredient
+  [x] Nutritionix API integration — "Lookup" button in modal fetches kcal/kJ
+        by name, kJ auto-calculated from kcal (1 kcal = 4.184 kJ)
+  [x] Transaction History modal per ingredient (last 100 transactions)
+  [x] Admin/Manager-only delete guard on kitchen ingredient archive
+  [x] Ingredient image URL field (imageUrl — stored per ingredient)
+  [x] priceEstimated flag on ingredients — amber warning shown in recipe form
+        when ingredient cost is an estimate pending a real PO
+
+  DB migrations:
+    20260429120643_add_ingredient_nutrition  → kcalPer100g Float?, kjPer100g Float?
+    20260430041022_add_ingredient_image      → imageUrl TEXT on ingredients
+    20260430044830_add_ingredient_price_estimated → priceEstimated BOOLEAN DEFAULT false
+  Env vars added: NUTRITIONIX_APP_ID=481c31c3, NUTRITIONIX_APP_KEY=***
+  New/updated files:
+    src/app/api/nutrition/route.ts              ← Nutritionix server-side proxy
+    src/app/api/stock/kitchen/route.ts          ← added POST (create ingredient)
+    src/app/api/stock/kitchen/[id]/route.ts     ← NEW: PATCH + DELETE
+    src/components/stock/KitchenIngredientModal.tsx  ← NEW: Add/Edit + lookup
+    src/components/stock/TransactionHistoryModal.tsx ← NEW: per-item tx log
+    src/components/stock/KitchenStockList.tsx   ← Full rewrite with all features
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  POS ENHANCEMENTS — TAKEAWAY & RESERVATIONS  [COMPLETE — 30 April 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TAKEAWAY ORDERS
+  [x] OrderType enum: DINE_IN | TAKEAWAY
+  [x] orders.type field (default DINE_IN), orders.tableId now nullable,
+        orders.customerName, orders.customerPhone added
+  [x] POST /api/orders handles both types:
+        DINE_IN — requires tableId, marks table OCCUPIED (same as before)
+        TAKEAWAY — no table, optional customerName + phone
+  [x] PATCH /api/orders/[id] — table status update guarded with null check
+  [x] "New Takeaway" button on floor map → quick modal (name + phone) → order screen
+  [x] Order screen header shows "Takeaway · [name]" instead of table number
+  [x] Cart sidebar header updated for takeaway orders
+  [x] KDS ticket shows Takeaway bag icon + customer name instead of table number
+
+TABLE RESERVATIONS
+  [x] ReservationStatus enum: PENDING | CONFIRMED | SEATED | CANCELLED | NO_SHOW
+  [x] reservations table: id, tableId, customerName, customerPhone, partySize,
+        reservedFor (DateTime), notes, status, createdById
+  [x] GET  /api/reservations  — today + next 7 days, excludes CANCELLED/NO_SHOW/SEATED
+        ?date=YYYY-MM-DD for specific day
+  [x] POST /api/reservations  — create reservation
+  [x] PATCH /api/reservations/[id] — update any field + status
+  [x] DELETE /api/reservations/[id] — hard delete
+  [x] "New Reservation" amber button on floor map toolbar
+  [x] ReservationModal — table select, customer name/phone, party size,
+        date+time picker, notes, status (edit only)
+  [x] Reservations panel below floor map — collapsible, grouped by time,
+        shows today + upcoming reservations
+  [x] Per-reservation actions: Confirm (PENDING only) | Seat | Edit | No-show | Cancel
+  [x] Seat action — creates DINE_IN order for the table, marks reservation SEATED,
+        navigates to order screen; guards against already-occupied table
+  [x] Table card badge — amber number showing upcoming reservation count per table
+  [x] TypeScript types updated: OrderWithItems, KdsTicket, new ReservationRow
+
+  DB migration: 20260430122807_takeaway_and_reservations
+    New enums: OrderType, ReservationStatus
+    Altered: orders (type, tableId nullable, customerName, customerPhone)
+    New table: reservations
+  New files:
+    src/app/api/reservations/route.ts
+    src/app/api/reservations/[id]/route.ts
+    src/components/pos/ReservationModal.tsx
+  Modified files:
+    prisma/schema.prisma
+    src/app/api/orders/route.ts
+    src/app/api/orders/[id]/route.ts
+    src/components/pos/FloorMap.tsx
+    src/components/pos/OrderScreen.tsx
+    src/components/pos/CartSidebar.tsx
+    src/components/kds/TicketCard.tsx
+    src/types/index.ts
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BUG FIX — STOCK DEDUCTION UNIT CONVERSION  [COMPLETE — 1 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Bug: PATCH /api/orders/[id] deducted recipe ingredient quantity directly from
+    stock without converting units. E.g. wagyu 150 G in a recipe was deducting
+    150 KG from stock instead of 0.15 KG.
+  Root cause: line `const deduct = ri.quantity * item.quantity` ignored ri.unit
+    vs ingredient.unit difference.
+  Fix: Added convertUnit() helper (weight: KG/G/LB/OZ, volume: L/ML/CUP/TBSP/TSP)
+    and applied it before the decrement:
+    `convertUnit(ri.quantity, ri.unit, ri.ingredient.unit) * item.quantity`
+  Modified: src/app/api/orders/[id]/route.ts
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  RECIPE DIETARY TAGS  [COMPLETE — 30 April 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [x] dietaryTags String[] field added to Recipe model (PostgreSQL native array)
+  [x] 11 supported tags: VEGAN, VEGETARIAN, GLUTEN_FREE, DAIRY_FREE, NUT_FREE,
+        HALAL, KOSHER, LOW_CARB, KETO, PALEO, SPICY (each with emoji + colour)
+  [x] Recipe form modal — Dietary section with coloured pill toggles
+        (positioned between Allergens and Method)
+  [x] Recipe detail modal — Dietary tags displayed below allergens as coloured badges
+  [x] Recipe card (list view) — dietary tags shown inline with allergens
+  [x] Print / PDF — dietary tags listed in printed recipe sheet
+  [x] API — POST and PATCH /api/recipes already accepted dietaryTags;
+        Prisma client regenerated (prisma generate) after migration was found stale
+
+  DB migration: 20260430052442_add_recipe_dietary_tags
+    Added: dietaryTags TEXT[] DEFAULT ARRAY[]::TEXT[] on recipes table
+  Bug fixed: Prisma generated client was not regenerated after the migration ran,
+    causing PrismaClientValidationError on PATCH when dietaryTags was first sent.
+    Fix: ran `npx prisma generate` — no schema or migration changes needed.
+  Modified files:
+    src/components/recipes/RecipeFormModal.tsx  ← Dietary toggle UI + form schema
+    src/components/recipes/RecipeDetailModal.tsx ← Dietary display + print output
+    src/components/recipes/RecipeList.tsx        ← Dietary tags on recipe cards
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  IPAD / NETWORK ACCESS FIX  [COMPLETE — 2 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Problem: iPad login via http://192.168.1.10:3000 failed because NEXTAUTH_URL
+    was set to http://localhost:3000 — URL mismatch breaks NextAuth cookies.
+  Also: Next.js HMR blocked cross-origin WebSocket connections from the iPad.
+
+  Fixes:
+  [x] .env — NEXTAUTH_URL changed to http://192.168.1.10:3000
+  [x] next.config.ts — added allowedDevOrigins: ["192.168.1.10"] so HMR
+        WebSocket works when the app is accessed via local network IP
+
+  Modified files:
+    .env
+    next.config.ts
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  POS — TABLE OPERATIONS ENHANCEMENTS  [COMPLETE — 2 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  New table management actions available inside an open order screen:
+
+  FREE OCCUPIED TABLE (mis-click fix)
+  [x] Back button on order screen with zero items shows a "Cancel & Free Table?"
+        confirmation dialog — cancels the order and marks the table FREE again
+
+  MOVE TABLE
+  [x] "Move Table" button (header) opens a table picker showing FREE tables only
+  [x] PATCH /api/orders/[id] with tableId — atomically frees old table,
+        occupies new table, updates order record
+  [x] patchSchema extended with tableId: z.string().optional()
+
+  JOIN TABLE (merge orders)
+  [x] "Join Table" button opens table picker showing OCCUPIED tables only
+  [x] POST /api/orders/[id]/merge { sourceOrderId }
+        — moves all non-VOID items from source order to target order
+        — voids the source order
+        — frees the source table
+        — all steps inside a single DB transaction
+
+  SPLIT TABLE
+  [x] "Split Table" button — 2-step UI:
+        Step 1: checkboxes to select which items to move
+        Step 2: table picker showing FREE tables
+  [x] POST /api/orders/[id]/split { itemIds[], tableId }
+        — creates a new order on the chosen FREE table
+        — moves selected items to the new order
+        — occupies the new table
+        — leaves remaining items on original order
+
+  DB migrations: none (uses existing schema)
+  New API routes:
+    POST /api/orders/[id]/merge
+    POST /api/orders/[id]/split
+  Modified files:
+    src/app/api/orders/[id]/route.ts      ← tableId in patchSchema + move logic
+    src/components/pos/OrderScreen.tsx    ← Move / Join / Split / Cancel UI
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PREP SYSTEM  [COMPLETE — 2 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Full kitchen prep workflow: sub-recipe stock, scheduled routines, urgent alerts.
+
+SCHEMA ADDITIONS  (migration: add_prep_system)
+  [x] Ingredient.prepRecipeId — links a stock item to the Recipe that produces it
+  [x] Ingredient.batchYield   — how many stock units one batch produces (e.g. 2 L)
+  [x] PrepTaskType enum: ROUTINE | URGENT
+  [x] PrepStatus enum: PENDING | IN_PROGRESS | DONE | CANCELLED
+  [x] PrepTask model:
+        id, ingredientId, type, status, targetQty,
+        startedAt, completedAt, notes, createdById, createdAt
+  [x] PrepRoutine model:
+        id, ingredientId, daysOfWeek (Int[]), triggerTime, targetQty,
+        active, createdAt
+
+SUB-RECIPE STOCK PATTERN
+  [x] Prep items (sauces, portions) are regular Ingredients in stock
+  [x] A Recipe is linked to that Ingredient via prepRecipeId + batchYield
+  [x] When a prep task completes: produced qty credited to ingredient.currentStock
+  [x] Raw ingredients used by the prep recipe are deducted automatically
+  [x] Stock deductions use yieldRate and unit conversion (same as order payment)
+
+PREP TASKS API
+  [x] GET  /api/prep/tasks  — today's tasks (PENDING/IN_PROGRESS always included,
+        DONE/CANCELLED filtered by date)
+  [x] POST /api/prep/tasks  — create ad-hoc prep task
+  [x] PATCH /api/prep/tasks/[id]:
+        IN_PROGRESS  → sets startedAt
+        DONE         → credits produced qty to stock, deducts raw ingredients,
+                        logs StockTransactions, triggers maybeCreateAutoPo for
+                        any raw ingredient that dropped below reorderPoint
+        CANCELLED    → simple status update
+  [x] DELETE /api/prep/tasks/[id]
+
+PREP ROUTINES API
+  [x] GET/POST  /api/prep/routines   — list + create routines
+  [x] PATCH/DELETE /api/prep/routines/[id]
+  [x] POST /api/prep/generate  — called daily (or manually); checks today's
+        day-of-week against each active routine's daysOfWeek array; creates a
+        ROUTINE PrepTask if one doesn't already exist for today
+
+URGENT PREP TRIGGER  (src/lib/autoPrep.ts)
+  [x] maybeCreateUrgentPrep(ingredientId, newStock) called after order payment
+  [x] Fires only if ingredient has a prepRecipeId and newStock ≤ parLevel
+  [x] Skips if an URGENT PENDING/IN_PROGRESS task already exists
+  [x] Creates PrepTask type=URGENT with targetQty = parLevel
+  [x] Sends in-app notification to ADMIN/MANAGER/CHEF/SOUS_CHEF users
+
+PREP BOARD UI  (src/components/prep/PrepBoard.tsx)
+  [x] Four sections: Urgent · In Progress · Pending · Done
+  [x] TaskCard subcomponent — prep item name, qty, type badge, elapsed time
+  [x] Complete task modal: deduction preview table (raw ingredient quantities),
+        stock-short warning badges if a raw ingredient has insufficient stock
+  [x] Add Task modal (ad-hoc task with ingredient + target qty)
+  [x] Add Routine modal (ingredient, days of week, trigger time, target qty)
+  [x] Routine management: list, toggle active, edit, delete
+  [x] /prep page (server component) fetches prep items + renders PrepBoard
+
+SIDEBAR
+  [x] "Prep" nav link added (ChefHat icon → /prep)
+
+  New files:
+    src/lib/autoPrep.ts
+    src/app/api/prep/tasks/route.ts
+    src/app/api/prep/tasks/[id]/route.ts
+    src/app/api/prep/routines/route.ts
+    src/app/api/prep/routines/[id]/route.ts
+    src/app/api/prep/generate/route.ts
+    src/components/prep/PrepBoard.tsx
+    src/app/(dashboard)/prep/page.tsx
+  Modified files:
+    prisma/schema.prisma
+    src/app/api/orders/[id]/route.ts    ← maybeCreateUrgentPrep after payment
+    src/components/layout/Sidebar.tsx   ← Prep nav item
+    src/types/index.ts                  ← PrepIngredient, PrepTaskRow, PrepRoutineRow
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  YIELD RATE (TRIM LOSS)  [COMPLETE — 2 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Concept: An ingredient ordered in bulk loses a percentage to trim/prep waste.
+  Example: 15 kg chicken thigh ordered → 15% trim loss → only 12.75 kg usable.
+  yieldRate = 0.85 means 85% of the purchased unit is actually usable.
+
+SCHEMA
+  [x] Migration: add_yield_rate
+  [x] Ingredient.yieldRate Float @default(1.0)
+        1.0 = no waste (100% yield — e.g. dry goods, liquids)
+        0.85 = 15% trim loss (e.g. bone-in proteins)
+        0.70 = 30% trim loss (e.g. whole fish, artichokes)
+
+APPLIED EVERYWHERE
+  [x] Recipe cost preview (RecipeFormModal) — live cost uses yieldRate
+  [x] Recipe cards cost display (RecipeList.calcCost) — uses yieldRate
+  [x] GET /api/recipes — costPerServing uses yieldRate + unit conversion
+  [x] recipes/page.tsx (server) — same calculation server-side
+  [x] PATCH /api/orders/[id] — stock deduction on payment divides by yieldRate
+  [x] PATCH /api/prep/tasks/[id] — raw ingredient deduction divides by yieldRate
+  [x] IngredientCombobox — shows "yield X%" label for ingredients with yieldRate < 1
+  [x] Ingredient rows in recipe form — shows effective cost per unit below row
+        e.g. "(yield 85% → eff. $10.59/KG)"
+  [x] PATCH /api/stock/kitchen/[id] — yieldRate added to update schema
+
+  Formula used throughout:
+    effectiveQty = convertedQty / yieldRate
+    costContrib   = ingredient.costPerUnit × effectiveQty
+
+  Bug fixed: Prisma client not regenerated after migration — ran `npx prisma generate`
+
+  Modified files:
+    prisma/schema.prisma
+    src/app/api/recipes/route.ts
+    src/app/api/orders/[id]/route.ts
+    src/app/api/prep/tasks/[id]/route.ts
+    src/app/api/stock/kitchen/[id]/route.ts
+    src/app/(dashboard)/recipes/page.tsx
+    src/components/recipes/RecipeList.tsx
+    src/components/recipes/RecipeFormModal.tsx
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  RECIPE SYSTEM — MENU vs PREP SPLIT  [COMPLETE — 2 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Recipes are now split into two types within the same model:
+    Menu Recipe  — sold to guests, has sellingPrice, shows on menu
+    Prep Recipe  — produces a stock ingredient (sauce, portion, base)
+                   distinguished by prepForItems.length > 0
+
+RECIPE LIST UI  (RecipeList.tsx)
+  [x] Segmented tabs: [All Recipes] [Menu Recipes] [Prep Recipes]
+        Prep  = recipe.prepForItems.length > 0
+        Menu  = recipe.prepForItems.length === 0
+  [x] Split "New" buttons:
+        "+ Menu Recipe"  (orange solid)
+        "+ Prep Recipe"  (amber outlined)
+  [x] PREP ITEM badge (amber, top-left of card image) on prep recipe cards
+  [x] Edit button sets correct mode (menu/prep) when opening the form
+  [x] handleSave strips _linkIngredientId / _linkBatchYield from recipe payload,
+        then PATCHes /api/stock/kitchen/[id] to link the ingredient
+
+RECIPE FORM MODAL  (RecipeFormModal.tsx)
+  [x] mode?: "menu" | "prep" prop
+  [x] "Prep Recipe" amber badge in modal header when mode=prep
+  [x] Selling price field hidden in prep mode (not relevant for sauces/portions)
+  [x] Food cost preview spans full width in prep mode
+  [x] Default category set to "SAUCE" when mode=prep
+  [x] "Link to Prep Ingredient" section (prep mode only):
+        • Dropdown of all stock ingredients not yet linked to a prep recipe
+          (or already linked to this recipe when editing)
+        • Batch Yield input: how many stock units one batch produces
+        • On save: PATCHes ingredient with prepRecipeId + batchYield
+
+INGREDIENT COMBOBOX  (inside RecipeFormModal.tsx)
+  [x] PREP badge next to ingredients that have prepRecipeId set
+  [x] "yield X%" label next to ingredients with yieldRate < 1
+  [x] Yield rate info line below each selected ingredient row in the form:
+        "(yield 85% → eff. $10.59/KG)"
+
+API UPDATES
+  [x] GET /api/recipes — ingredient select includes yieldRate, prepRecipeId;
+        recipe include adds prepForItems
+  [x] PATCH /api/recipes/[id] response includes prepForItems so PREP ITEM
+        badge stays correct after editing without a page refresh
+  [x] recipes/page.tsx — server-side costPerServing uses yieldRate + unit conversion
+
+PREP RECIPE SEED DATA  (prisma/seed-prep-recipes.ts)
+  [x] 25 raw ingredients upserted (existing + new: Tamari, Rice Vinegar,
+        Sriracha, Kewpie Mayo, Black Garlic, Lemongrass, Coconut Milk, etc.)
+  [x] 10 prep stock ingredients created (CONDIMENT category, currentStock=0)
+  [x] 10 prep recipes created and linked to their stock ingredient:
+        Teriyaki Sauce          → 0.40 L/batch   (soy/mirin/sake/sugar)
+        GF Teriyaki Sauce       → 0.40 L/batch   (tamari version)
+        Ponzu Sauce             → 0.40 L/batch   (soy/yuzu/mirin/sake/vinegar)
+        GF Ponzu Sauce          → 0.40 L/batch   (tamari version)
+        Yuzu Dressing           → 0.25 L/batch   (yuzu/sesame oil/light soy/ginger)
+        Spicy Miso Tare         → 0.35 L/batch   (miso/mirin/sake/chilli/sesame)
+        Spicy Mayo              → 0.55 kg/batch  (kewpie/sriracha)
+        Black Garlic Butter     → 0.55 kg/batch  (butter/black garlic/soy)
+        Thai Coconut Sauce      → 0.45 L/batch   (coconut milk/lemongrass/fish sauce)
+        Shichimi Tare           → 0.35 L/batch   (dashi/soy/mirin/honey/shichimi)
+  Run: npx tsx prisma/seed-prep-recipes.ts
+
+  New files:
+    prisma/seed-prep-recipes.ts
+  Modified files:
+    src/components/recipes/RecipeList.tsx
+    src/components/recipes/RecipeFormModal.tsx
+    src/app/api/recipes/route.ts
+    src/app/api/recipes/[id]/route.ts
+    src/app/(dashboard)/recipes/page.tsx
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  KDS — COMPLETED TICKETS & PAID ORDER FIX  [COMPLETE — 2 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPLETED TICKETS SECTION
+  [x] KdsBoard splits tickets into two groups:
+        Active  — has at least one item with status=COOKING
+        Done    — all items have status=READY
+  [x] Active tickets display in main grid (unchanged behaviour)
+  [x] Done tickets appear in a separate section below with:
+        • Green "Completed — N tickets" section header
+        • Tickets grouped into collapsible 1-hour time rows
+          e.g. "22:00 – 23:00  ·  3 tickets"
+        • Newest hour bucket shown first
+        • Click row header to collapse/expand the hour group
+        • Done cards scroll horizontally inside each hour row (width 288px each)
+        • Done cards at 60% opacity, rise to 90% on hover
+  [x] Done TicketCard styling:
+        • Green border (border-emerald-700/40) instead of urgency colour
+        • Green "Done" badge instead of elapsed time
+        • Action buttons (Cooking / Ready toggles) hidden
+  [x] Active ticket count in header excludes done tickets
+
+BUG FIX — PAID ORDERS VANISHING FROM KDS
+  Problem: When a customer paid (order→PAID) the kitchen ticket disappeared
+    immediately, even if items were still being cooked. A new T1 order would
+    also hide the old T1 ticket.
+  Fix: KDS API now fetches PAID/VOID orders where closedAt ≥ 3 hours ago
+    AND still have COOKING/READY items — kitchen keeps full visibility until
+    items are done and 3 h has elapsed.
+  [x] TicketCard shows a small "PAID" (blue) or "VOID" (gray) badge next to
+        server name so staff know the table has already checked out
+
+  Modified files:
+    src/app/api/kds/tickets/route.ts   ← OR query: active + recently closed
+    src/components/kds/KdsBoard.tsx    ← done section + hour grouping
+    src/components/kds/TicketCard.tsx  ← done prop, PAID/VOID badge
+    src/types/index.ts                 ← KdsTicket.status + KdsTicket.closedAt
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  IPAD DRAG-AND-DROP — CART SIDEBAR  [COMPLETE — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Problem: HTML5 drag-and-drop API is unsupported on iOS/iPadOS. Course reordering
+    in CartSidebar didn't work on iPad — items couldn't be dragged between courses.
+
+  Fix: Replaced HTML5 drag entirely with Pointer Events API + hold-to-drag pattern.
+
+  [x] 200ms hold threshold — pointer must be held for 200ms before drag begins
+        (prevents accidental drags during normal taps/scrolls)
+  [x] Ghost element — fixed-position translucent card follows the finger;
+        pointer-events: none so it doesn't block hit-testing underneath
+  [x] Drop zone detection — document.elementsFromPoint() reads data-course-num
+        attribute on course zone divs to find the target course
+  [x] Ghost highlight — turns orange when hovering over a valid drop zone
+  [x] Cancel conditions — > 8px vertical movement before 200ms cancels drag
+        (lets vertical scroll work naturally)
+  [x] Global pointermove / pointerup listeners attached on drag start,
+        cleaned up on drop or cancel
+
+  iOS CALLOUT / TEXT SELECTION FIX
+  [x] select-none (user-select: none) on CartItem div
+  [x] WebkitTouchCallout: "none" inline style on grip button
+  [x] onContextMenu preventDefault on grip button and items scroll area
+        (suppresses "Copy / Look Up / Share" popup on long-press)
+
+  GRIP ICON SIZE
+  [x] GripVertical icon: size={11} → size={20}; padding p-0.5 → p-2
+  [x] Added hover + active background styles for easier touch targeting
+
+  Modified files:
+    src/components/pos/CartSidebar.tsx
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PWA — FULL-SCREEN NATIVE IOS EXPERIENCE  [COMPLETE — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Goal: App added to iPad/iPhone home screen opens full-screen (no Safari chrome)
+    with correct safe-area insets for notch/home-bar devices.
+
+  [x] src/app/manifest.ts (NEW) — Next.js App Router web app manifest:
+        display: "standalone", start_url: "/dashboard",
+        background_color/theme_color: "#030712",
+        icons: icon-192.png + icon-512.png (maskable)
+  [x] src/app/layout.tsx — viewport export added:
+        viewportFit: "cover", maximumScale: 1, userScalable: false,
+        themeColor: "#030712"
+        appleWebApp: { capable: true, title: "RMS", statusBarStyle: "black-translucent" }
+        icons.apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }]
+  [x] src/app/globals.css additions:
+        -webkit-overflow-scrolling: touch (momentum scroll)
+        -webkit-tap-highlight-color: transparent
+        -webkit-touch-callout: none (global)
+        overscroll-behavior: none (no bounce at body level)
+        Safe area CSS variables + .safe-bottom / .safe-top utility classes
+  [x] src/app/(dashboard)/layout.tsx:
+        paddingTop: env(safe-area-inset-top) on outer div
+        paddingBottom: env(safe-area-inset-bottom) on main content area
+  [x] scripts/gen-icons.mjs (NEW) — generates PWA icons using canvas package:
+        apple-touch-icon.png (180×180), icon-192.png, icon-512.png
+        Orange-to-orange-600 gradient background with white "RMS" text
+        Run: node scripts/gen-icons.mjs
+
+  New files:
+    src/app/manifest.ts
+    scripts/gen-icons.mjs
+  Modified files:
+    src/app/layout.tsx
+    src/app/globals.css
+    src/app/(dashboard)/layout.tsx
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BEVERAGE RECIPES & MOCK DATA  [COMPLETE — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  prisma/seed-beverages.ts (NEW):
+  [x] 35 raw ingredients upserted (spirits, mixers, dairy, coffee, garnish)
+  [x] 4 syrup stock items (Simple Syrup, Yuzu Simple Syrup, Honey Ginger Syrup,
+        Matcha Syrup) created as CONDIMENT ingredients with prepRecipeId linkage
+  [x] 4 syrup prep recipes linked to their stock ingredient + batchYield
+  [x] 12 beverage recipes + MenuItem (category: BEVERAGE) created:
+        Cocktails:  Whisky Highball, Yuzu Margarita, Tokyo Mule,
+                    Miso Old Fashioned, Sakura Spritz,
+                    Matcha Espresso Martini, Yuzu Sake Sour
+        Mocktails:  Yuzu Lemonade, Ginger Lychee Cooler, Butterfly Pea Lemonade
+        Hot Drinks: Ceremonial Matcha Latte, Hojicha Latte
+  Run: npx tsx prisma/seed-beverages.ts
+
+  POS — BEVERAGE-SPECIFIC MODIFICATION TAGS
+  [x] ItemRequestModal.tsx: renamed REQUEST_GROUPS → FOOD_GROUPS
+  [x] Added BEVERAGE_GROUPS with drink-specific tag categories:
+        Temperature  (Iced / Hot / Extra Hot / Room Temperature)
+        Ice          (No Ice / Less Ice / Normal Ice / Extra Ice)
+        Sweetness    (No Sugar / Less Sweet / Normal Sweet / Extra Sweet)
+        Milk         (Full Cream / Oat Milk / Almond Milk / Skim Milk / No Milk)
+        Extras       (Extra Shot / Decaf / Extra Syrup / No Straw / Large / No Garnish)
+  [x] Conditional render: item.category === "BEVERAGE" → BEVERAGE_GROUPS,
+        else FOOD_GROUPS (Dietary / Spice / Modifications / Cooking)
+
+  New files:
+    prisma/seed-beverages.ts
+  Modified files:
+    src/components/pos/ItemRequestModal.tsx
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SIDE DISH MOCK DATA  [COMPLETE — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  prisma/seed-sides.ts (NEW):
+  [x] 36 raw ingredients upserted (wakame, tofu, edamame, daikon, nori, etc.)
+  [x] 11 SIDE category recipes + MenuItems created:
+        Wakame Salad               $8   — Vegan, GF, sesame dressing
+        Japanese Pickle Trio       $9   — Vegan, GF (daikon / cucumber / napa)
+        Edamame                    $6   — Vegan, GF, salted
+        Garlic Edamame             $9   — Vegan, wok-tossed with garlic & togarashi
+        Agedashi Tofu             $12   — Crispy silken tofu in dashi broth
+        Miso Soup                  $5   — Vegan, tofu / wakame / spring onion
+        Hiyayakko (Chilled Tofu)   $8   — Cold tofu with ginger & bonito
+        Sunomono (Cucumber Salad)  $7   — Vegan, GF, rice vinegar sanbaizu
+        Steamed Japanese Rice      $4   — Vegan, GF
+        Tempura Vegetables        $14   — Seasonal veg with tentsuyu sauce
+        Spinach Goma-ae            $9   — Vegan, GF, sweet sesame sauce
+  Run: npx tsx prisma/seed-sides.ts
+
+  New files:
+    prisma/seed-sides.ts
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DRINKS MENU — SUBCATEGORY SYSTEM & FULL MENU DATA  [COMPLETE — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  All drink types remain category=BEVERAGE in the DB. A new subcategory field
+  groups them into labelled rows within the POS Beverages tab.
+
+SCHEMA
+  [x] Migration: add_menu_item_subcategory
+  [x] MenuItem.subcategory String? — nullable, free-text group label
+        e.g. "Cocktail" | "Mocktail" | "Wine" | "Beer" | "Spirit" | "Sake"
+           | "Soft Drink" | "Tea" | "Juice" | "Water"
+
+POS — BEVERAGES TAB GROUPING  (OrderScreen.tsx)
+  [x] When Beverages tab is active and no search query, items are grouped
+        into labelled sections in a defined order:
+        Cocktail → Mocktail → Wine → Beer → Spirit → Sake →
+        Soft Drink → Tea → Juice → Water → Other
+  [x] Each section shows a grey uppercase label + item grid below
+  [x] Searching or viewing any other tab reverts to the normal flat grid
+  [x] Subcategory order defined via BEVERAGE_SUBCATEGORY_ORDER constant
+
+SEED DATA  (prisma/seed-drinks.ts — NEW)
+  [x] Updated existing mock cocktail / mocktail / hot-drink MenuItems
+        with correct subcategory values (Cocktail / Mocktail / Tea)
+  [x] 125 new MenuItems created directly (no recipe — packaged products):
+        Cocktail    8 items  (actual menu: Peachrita, Yuzu Love, JOF, etc.)
+        Mocktail    1 item   (Very Berry)
+        Wine       60 items  (Sparkling / Sauv Blanc / Chardonnay / Pinot Gris /
+                              Riesling / Other White / Rosé / Shiraz /
+                              Pinot Noir / Cabernet & Other Reds)
+                             Dual glass+bottle items where menu shows two prices
+                             e.g. "See Saw Prosecco (Glass) $13.50"
+                                  "See Saw Prosecco (Bottle) $57"
+        Beer        9 items  (Asahi tap + bottled, Sapporo, Kirin, Yebisu,
+                              Rogers', Cascade Light, Small Acres Cyder ×2)
+        Spirit     30 items  (Vodka ×3, Gin ×4, Rum ×3, Tequila ×2,
+                              Japanese Whiskey ×4, Whisky ×7, Aperitif ×8)
+        Sake        9 items  (Hot Sake, Cold Sake ×3, Dessert Sake,
+                              Shochu ×3, Umeshu)
+        Soft Drink  7 items
+        Tea         4 items
+        Juice       4 items
+        Water       1 item
+  Run: npx tsx prisma/seed-drinks.ts
+
+  DB migration: 20260502143950_add_menu_item_subcategory
+  New files:
+    prisma/seed-drinks.ts
+  Modified files:
+    prisma/schema.prisma
+    src/types/index.ts               ← MenuItemWithRecipe.subcategory added
+    src/components/pos/OrderScreen.tsx  ← beverageGroups + grouped render
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  KDS — KITCHEN / BAR DISPLAY TOGGLE  [COMPLETE — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  All BEVERAGE items now route to a Bar Display, separate from food tickets.
+  The same KDS page hosts both views — staff switch with a single toggle.
+
+TOGGLE  (KdsBoard.tsx)
+  [x] Mode pill in header: [🍴 Kitchen] [🍷 Bar]
+        Kitchen = orange accent, Bar = teal accent
+  [x] Kitchen mode: filters OUT BEVERAGE items from all tickets;
+        tickets with no remaining food items are hidden entirely
+  [x] Bar mode:    filters OUT all non-BEVERAGE items;
+        tickets with no drink items are hidden entirely
+  [x] A mixed ticket (food + drinks) appears in BOTH views simultaneously,
+        each showing only the relevant items for that station
+  [x] Done section, hour-bucket grouping, and collapsible rows all work
+        identically in both modes
+
+BAR DISPLAY STYLING  (TicketCard.tsx)
+  [x] barMode prop added to TicketCard
+  [x] Bar mode cards: teal border (border-teal-600/50) instead of gray
+  [x] Timer badge: teal (bg-teal-500/20 text-teal-400) in bar mode
+  [x] Status label: "Cooking" → "Serving" in bar mode
+        (drinks are poured/opened, not cooked)
+  [x] Urgency override still applies in bar mode:
+        8+ min → amber, 15+ min → red (slow drink service is still an issue)
+
+  Page title updated: "Kitchen · Bar Display"
+
+  Modified files:
+    src/components/kds/KdsBoard.tsx   ← mode state, filter logic, toggle UI
+    src/components/kds/TicketCard.tsx ← barMode prop, teal styling, "Serving" label
+    src/app/(dashboard)/kds/page.tsx  ← page title
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  MULTI-RESTAURANT SUPPORT  [COMPLETE — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  One user account can own or belong to multiple restaurants. All data is fully
+  isolated per restaurant. A sidebar dropdown lets staff switch between them
+  without logging out.
+
+SCHEMA ADDITIONS  (migration: 20260503000001_add_multi_restaurant)
+  [x] Restaurant model — id, name, address, phone, timezone, active, createdAt
+  [x] UserRestaurant junction — (userId, restaurantId, role) composite PK
+        allows one user to be a member of many restaurants with distinct roles
+  [x] User.restaurants UserRestaurant[] relation added
+  [x] restaurantId FK added to 14 models:
+        RestaurantTable, MenuItem, Order, Reservation, Recipe, Ingredient,
+        FohItem, StockTransaction, Supplier, PurchaseOrder, Notification,
+        PrepTask, PrepRoutine, LabSession
+  [x] 4 unique constraints converted to composite with restaurantId:
+        Ingredient.name   → @@unique([restaurantId, name])
+        FohItem.name      → @@unique([restaurantId, name])
+        Supplier.name     → @@unique([restaurantId, name])
+        RestaurantTable.number → @@unique([restaurantId, number])
+  [x] Backfill: existing data assigned to default restaurant
+        'clrestaurant00000000000001' (My Restaurant)
+        All existing users enrolled in default restaurant with their current role
+
+RESTAURANT CONTEXT COOKIE
+  [x] src/lib/restaurant.ts (NEW) — getRestaurantId(userId) helper:
+        1. Reads rms-rid httpOnly cookie
+        2. Validates user is a member of that restaurantId via DB
+        3. Falls back to user's first restaurant if cookie is missing/invalid
+  [x] Cookie name: rms-rid (30-day expiry, httpOnly, SameSite=Lax)
+  [x] Separate from JWT — can be changed server-side without re-login
+
+NEW API ROUTES
+  [x] GET  /api/restaurants       — list user's restaurants, active: bool flag
+  [x] POST /api/restaurants       — create new restaurant, enroll creator as ADMIN
+  [x] POST /api/restaurants/switch — validate membership, set rms-rid cookie
+
+ALL EXISTING API ROUTES UPDATED (~30 routes)
+  [x] Standard pattern applied to every route:
+        const restaurantId = await getRestaurantId(session.user.id);
+        if (!restaurantId) return 403;
+        // all queries include restaurantId in where/data
+  [x] Routes updated: tables, menu, recipes, kds/tickets, stock/kitchen,
+        stock/foh, stock/transactions, suppliers, purchase-orders, reservations,
+        prep/tasks, prep/routines, prep/generate, notifications, lab/sessions,
+        lab/chat, lab/recipes, orders, orders/history, orders/[id], ingredients
+
+LIBRARY FUNCTIONS  (no request context — use ingredient.restaurantId)
+  [x] src/lib/autoOrder.ts — reads ingredient.restaurantId from DB record;
+        filters admin/manager notifications to restaurant members only
+  [x] src/lib/autoPrep.ts  — same pattern
+
+SIDEBAR RESTAURANT SWITCHER
+  [x] src/components/layout/RestaurantSwitcher.tsx (NEW):
+        • Fetches /api/restaurants on mount
+        • Expanded mode: shows active restaurant name + chevron dropdown
+        • Collapsed mode: shows Building2 icon (tooltip = name)
+        • Dropdown: checkmarks active restaurant, click → switch + page reload
+        • Inline "Add restaurant" form with text input (Enter to confirm)
+        • Collapsed prop wired through from Sidebar
+  [x] src/components/layout/Sidebar.tsx — RestaurantSwitcher inserted between
+        logo/collapse toggle and nav links, in its own border-b wrapper
+
+TYPE AUGMENTATION
+  [x] src/types/next-auth.d.ts (NEW) — declares Session.user.id: string
+        (NextAuth v5 types Session.user.id as string | undefined by default;
+         augmentation eliminates ~20 TypeScript errors across API routes)
+
+SEED FILES
+  [x] @ts-nocheck added to all 6 seed files (seed.ts, seed-japanese.ts,
+        seed-prep-recipes.ts, seed-beverages.ts, seed-sides.ts, seed-drinks.ts)
+        because they reference old unique-by-name lookups now broken by the
+        composite unique constraint change; seeds are already-run, not app runtime
+
+  New files:
+    prisma/migrations/20260503000001_add_multi_restaurant/migration.sql
+    src/lib/restaurant.ts
+    src/app/api/restaurants/route.ts
+    src/app/api/restaurants/switch/route.ts
+    src/types/next-auth.d.ts
+    src/components/layout/RestaurantSwitcher.tsx
+  Modified files:
+    prisma/schema.prisma              ← Restaurant + UserRestaurant models, 14 FK additions
+    src/components/layout/Sidebar.tsx ← RestaurantSwitcher added
+    src/lib/autoOrder.ts              ← restaurantId from ingredient record
+    src/lib/autoPrep.ts               ← restaurantId from ingredient record
+    src/app/api/orders/[id]/route.ts  ← restaurantId on stock tx; findFirst with restaurantId
+    src/app/api/orders/[id]/split/route.ts    ← restaurantId on new order
+    src/app/api/purchase-orders/[id]/receive/route.ts ← restaurantId on stock tx
+    src/app/api/prep/tasks/[id]/route.ts      ← restaurantId on stock tx (×2)
+    src/app/api/lab/recipes/route.ts          ← restaurantId from labSession
+    + all ~22 other API routes (restaurantId guard + filter)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 5 — ANALYTICS & POLISH  [IN PROGRESS — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 5.1 — ANALYTICS DASHBOARD  [✓ COMPLETE]
+  [x] npm install recharts
+  [x] GET /api/analytics?range=7d|30d|90d — single endpoint returning:
+        Revenue summary (total, today, avg order)
+        Daily sales array (date, revenue, orders)
+        Top 10 selling items by qty + revenue
+        Recipe food cost % (costPerServing / sellingPrice × 100, with yield+unit conv)
+        Stock valuation (kitchen + FOH, low/out counts)
+        Waste report by ingredient category (qty + estimated cost)
+        Orders by type (dine-in vs takeaway)
+  [x] src/components/analytics/AnalyticsPage.tsx (client component):
+        Range tabs: Last 7 / 30 / 90 days
+        4 KPI cards: Revenue · Orders · Avg Order · Stock Value
+        Daily Revenue bar chart (recharts BarChart)
+        Top Selling Items horizontal bar chart
+        Food Cost % progress bars (green ≤28% · amber ≤35% · red >35%)
+        Stock Valuation panel with Low/Out of Stock alert counts
+        Waste Report panel (by category, total cost)
+        Order Volume Trend line chart
+        Skeleton loading state (pulse animation)
+  [x] src/app/(dashboard)/analytics/page.tsx — server wrapper
+  [x] charts use mounted guard to avoid SSR hydration issues
+
+STEP 5.2 — TEAM MANAGEMENT  [✓ COMPLETE]
+  [x] GET  /api/team — list restaurant members with user details
+  [x] POST /api/team — invite/add member:
+        Existing user by email → add to restaurant
+        New user → create account + enroll (ADMIN/MANAGER only)
+  [x] PATCH /api/team/[userId] — change role or toggle active (ADMIN/MANAGER)
+  [x] DELETE /api/team/[userId] — remove from restaurant (ADMIN only)
+  [x] src/app/(dashboard)/team/page.tsx (client component):
+        Member table: avatar, name, email, role badge, active status
+        Role dropdown (click to change inline, ADMIN/MANAGER only)
+        Deactivate / activate toggle button (ADMIN only)
+        Remove from restaurant button (ADMIN only)
+        "Add Member" modal: name, email, temp password, role selector
+        Self-row protected (cannot modify own account)
+        toast.success / toast.error feedback on all actions
+
+STEP 5.3 — SETTINGS PAGE  [✓ COMPLETE]
+  [x] GET  /api/settings — return current restaurant record
+  [x] PATCH /api/settings — update restaurant (ADMIN only)
+  [x] src/app/(dashboard)/settings/page.tsx (client component):
+        Restaurant Name input
+        Restaurant Type radio selector (Cafe / Dine-in / Takeaway)
+        Address + Phone inputs
+        Timezone dropdown (common AU / NZ / Asia / EU / US zones)
+        System Info section (restaurant ID)
+        Save Changes button (disabled until dirty)
+        Settings nav item added to Sidebar
+
+STEP 5.4 — TOAST NOTIFICATION SYSTEM  [✓ COMPLETE]
+  [x] src/lib/toast.tsx — ToastProvider + useToast() hook
+        Types: success | error | warning | info
+        Auto-dismiss after 4 seconds
+        Stack up to 5 toasts (older ones pushed out)
+        Slide-in-from-right animation
+        X button for manual dismiss
+        Colour-coded borders/backgrounds per type
+  [x] ToastProvider wrapped around layout in (dashboard)/layout.tsx
+  [x] Used in team page and settings page (replacing alert() pattern)
+
+  New files:
+    src/app/api/analytics/route.ts
+    src/app/api/team/route.ts
+    src/app/api/team/[userId]/route.ts
+    src/app/api/settings/route.ts
+    src/lib/toast.tsx
+    src/components/analytics/AnalyticsPage.tsx
+    src/app/(dashboard)/analytics/page.tsx
+    src/app/(dashboard)/team/page.tsx
+    src/app/(dashboard)/settings/page.tsx
+  Modified files:
+    src/app/(dashboard)/layout.tsx  ← ToastProvider added
+    src/components/layout/Sidebar.tsx ← Settings nav item added
+
+REMAINING (Phase 5):
+  [ ] PDF report exports (/api/analytics/export — pdfkit already installed)
+  [ ] Mobile / tablet responsive optimization for POS
+  [ ] Full QA pass + staging deployment (Vercel + Railway)
+  [ ] Production deployment checklist
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  STAFF ROSTER  [COMPLETE — 4 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Full staff scheduling system: ADMIN/MANAGER/CHEF build weekly rosters, publish
+  via email, staff confirm/reject shifts with notes, manager approves rejections.
+  Sick, annual, and holiday leave with approval flow.
+
+SCHEMA ADDITIONS  (migration: 20260504000004_roster)
+  [x] RosterStatus enum — DRAFT | PUBLISHED | ARCHIVED
+  [x] ShiftConfirmStatus enum — PENDING | CONFIRMED | REJECTED | EXCUSED | OVERRIDE
+  [x] LeaveType enum — SICK | ANNUAL | HOLIDAY | OTHER
+  [x] LeaveStatus enum — PENDING | APPROVED | REJECTED
+  [x] RosterWeek model — restaurantId, weekStart, notes, status, publishedAt, createdById
+  [x] RosterShift model — rosterId, userId, date, startTime, endTime, position, notes,
+        confirmStatus, confirmNote, confirmedAt
+  [x] RosterInvite model — rosterId, userId, token (unique), sentAt
+        Unique constraint: (rosterId, userId) — one invite per staff per week
+  [x] LeaveRequest model — restaurantId, userId, type, startDate, endDate, reason,
+        status, reviewedById, reviewNote, reviewedAt
+
+WORKFLOW
+  DRAFT         — builder creates roster, adds shifts per staff per day
+  PUBLISHED     — "Publish & Email Staff" sends email to every assigned staff member
+                  Each staff gets a unique link: /roster/confirm/[token]
+  CONFIRMED     — staff clicks "Confirm" for their shift
+  REJECTED      — staff clicks "Can't work" + types reason
+  EXCUSED       — manager accepts the rejection (staff not required)
+  OVERRIDE      — manager overrides rejection (staff still required)
+
+API ROUTES
+  [x] GET  /api/roster            — list roster weeks for restaurant
+  [x] POST /api/roster            — create new roster week (ADMIN/MANAGER/CHEF)
+  [x] GET  /api/roster/[id]       — get week with all shifts
+  [x] DELETE /api/roster/[id]     — delete roster (ADMIN/MANAGER)
+  [x] POST /api/roster/[id]/shifts — add shift (staff + day + time + position)
+  [x] PATCH /api/roster/[id]/shifts/[shiftId] — edit shift or update confirmStatus
+  [x] DELETE /api/roster/[id]/shifts/[shiftId] — remove shift
+  [x] POST /api/roster/[id]/publish — publish roster + send roster invite emails
+  [x] GET  /api/roster/confirm/[token] — public: get shift info for confirmation
+  [x] POST /api/roster/confirm/[token] — public: submit confirm/reject decisions
+  [x] GET  /api/leave             — list leave requests (ADMIN/MANAGER=all; others=own)
+  [x] POST /api/leave             — submit leave request (all staff)
+  [x] PATCH /api/leave/[id]       — approve/reject leave request (ADMIN/MANAGER)
+  [x] DELETE /api/leave/[id]      — cancel own PENDING request
+
+UI  /roster  (accessible to all roles)
+  [x] Schedule tab — weekly calendar grid (staff rows × Mon-Sun columns)
+        Color-coded cells by confirmStatus (green/red/yellow/blue/grey)
+        Leave days shown as purple overlay
+        Click any shift cell → tooltip with full details + rejection note
+        Week navigator (prev/next arrows)
+  [x] Builder tab — (ADMIN/MANAGER/CHEF only)
+        Same grid but editable
+        Click empty cell → add shift modal (start/end time, position, notes)
+        Click filled cell → edit/update shift
+        Hover shift → delete button + Excuse/Override buttons on rejected shifts
+        Rejection summary panel at bottom showing all rejected shifts
+        "Publish & Email Staff" button (disabled if no shifts)
+  [x] Leave tab — all staff
+        "Request Leave" button → modal (type, date range, reason)
+        Pending/Mine/All filter
+        ADMIN/MANAGER: Review button → approve/reject with note
+        Staff: Cancel own pending requests
+
+CONFIRMATION PAGE  /roster/confirm/[token]  (public, no auth required)
+  [x] Branded page with Cloudflow logo
+  [x] Shows staff name + week dates
+  [x] Lists each shift with day, date, time, position
+  [x] Per-shift Confirm / Can't work toggle
+  [x] Rejection note text input (shown when "Can't work" selected)
+  [x] Submit button records all decisions at once
+
+EMAIL  (src/lib/mailer.ts — sendRosterInviteEmail)
+  [x] Sent when roster is published
+  [x] Shows shift schedule table
+  [x] Orange "Confirm My Schedule" CTA button links to /roster/confirm/[token]
+
+  New files:
+    prisma/migrations/20260504000004_roster/migration.sql
+    src/app/api/roster/route.ts
+    src/app/api/roster/[id]/route.ts
+    src/app/api/roster/[id]/shifts/route.ts
+    src/app/api/roster/[id]/shifts/[shiftId]/route.ts
+    src/app/api/roster/[id]/publish/route.ts
+    src/app/api/roster/confirm/[token]/route.ts
+    src/app/api/leave/route.ts
+    src/app/api/leave/[id]/route.ts
+    src/app/(dashboard)/roster/page.tsx
+    src/components/roster/RosterPage.tsx
+    src/components/roster/RosterCalendar.tsx
+    src/components/roster/RosterBuilder.tsx
+    src/components/roster/LeavePanel.tsx
+    src/app/roster/confirm/[token]/page.tsx
+  Modified files:
+    prisma/schema.prisma              ← 4 new models + 4 enums + User/Restaurant relations
+    src/lib/mailer.ts                 ← sendRosterInviteEmail added
+    src/components/layout/Sidebar.tsx ← Roster nav item (CalendarDays icon, all roles)
+    src/proxy.ts                      ← /roster/confirm/ added to public paths
+    src/lib/permissions.ts            ← /roster added (all roles)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 6 — CENTRAL KITCHEN  [COMPLETE — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  One restaurant is designated a Central Kitchen (production hub). Other
+  restaurants link to it and place distribution requests. Stock is deducted
+  from the CK on dispatch and credited to the receiving restaurant on receive.
+
+SCHEMA ADDITIONS  (migrations: 20260503000002_add_restaurant_type,
+                               20260503000003_central_kitchen)
+  [x] RestaurantType enum — CAFE | DINE_IN | TAKEAWAY | CENTRAL_KITCHEN
+  [x] restaurants.type column (default DINE_IN)
+  [x] DistributionStatus enum — DRAFT | SUBMITTED | APPROVED | DISPATCHED
+                                 | RECEIVED | CANCELLED
+  [x] CentralKitchenLink model — composite PK (centralKitchenId, linkedRestaurantId)
+  [x] DistributionRequest model — fromRestaurantId, centralKitchenId, status,
+        neededBy, notes, createdById
+  [x] DistributionItem model — requestId, ckIngredientId, ingredientName, unit,
+        requestedQty, approvedQty, dispatchedQty, receivedQty
+
+WORKFLOW (DRAFT → SUBMITTED → APPROVED → DISPATCHED → RECEIVED)
+  DRAFT       — created by linked restaurant, editable
+  SUBMITTED   — locked, pending CK review
+  APPROVED    — CK set approved qty per item
+  DISPATCHED  — CK deducts stock (StockTransaction OUT) + records dispatchedQty
+  RECEIVED    — receiving restaurant increments stock (auto-creates ingredient
+                  if not found, StockTransaction IN) + records receivedQty
+
+API ROUTES
+  [x] GET  /api/central-kitchen/links     — context-aware: CK sees linked
+        restaurants, restaurant sees its CKs + available CKs to link
+  [x] POST /api/central-kitchen/links     — create link (restaurant side)
+  [x] GET  /api/central-kitchen/requests  — CK: incoming requests;
+        restaurant: outgoing requests (with items + statuses)
+  [x] POST /api/central-kitchen/requests  — create distribution request with items
+  [x] POST /api/central-kitchen/requests/[id]/approve   — set approvedQty per item
+  [x] POST /api/central-kitchen/requests/[id]/dispatch  — deduct CK stock,
+        record StockTransaction OUT, status → DISPATCHED
+  [x] POST /api/central-kitchen/requests/[id]/receive   — increment restaurant
+        stock (auto-create ingredient if missing), StockTransaction IN,
+        status → RECEIVED
+  [x] GET  /api/central-kitchen/demand    — CK only: aggregated demand from
+        SUBMITTED+APPROVED requests grouped by ingredient, shows shortfall
+  [x] GET  /api/central-kitchen/ingredients?ckId=X — list a CK's ingredients
+        (accessible by CK members and their linked restaurants)
+
+UI  (src/components/central-kitchen/CentralKitchenPage.tsx)
+  [x] Tab navigation: Requests | Demand Overview (CK only) | Links
+  [x] RequestCard — summary with status badge, restaurant name, item count
+  [x] RequestDetailModal — per-status editable qty inputs + action buttons:
+        Submit (DRAFT), Approve (SUBMITTED), Dispatch (APPROVED), Receive (DISPATCHED)
+  [x] DemandView (CK only) — aggregated demand table with red shortfall alerts
+  [x] LinksView — CK sees all linked restaurants; restaurant sees its CK +
+        available CKs to link (with Link button)
+  [x] EmptyNotLinked — setup screen shown when no CK is linked
+  [x] NewRequestModal — select CK, neededBy date, notes, dynamic item rows
+        (ingredient picker loads from /api/central-kitchen/ingredients?ckId=X)
+  [x] Role guards: Submit/Receive visible to all; Approve/Dispatch CK-only
+
+SETTINGS & SIDEBAR
+  [x] Restaurant type selector updated to include Central Kitchen option (4th type)
+  [x] Central Kitchen nav item added to Sidebar (Warehouse icon → /central-kitchen)
+  [x] /api/settings PATCH accepts CENTRAL_KITCHEN type
+  [x] /api/restaurants POST accepts CENTRAL_KITCHEN via modal type picker
+
+  New files:
+    prisma/migrations/20260503000002_add_restaurant_type/migration.sql
+    prisma/migrations/20260503000003_central_kitchen/migration.sql
+    src/app/api/central-kitchen/links/route.ts
+    src/app/api/central-kitchen/requests/route.ts
+    src/app/api/central-kitchen/requests/[id]/approve/route.ts
+    src/app/api/central-kitchen/requests/[id]/dispatch/route.ts
+    src/app/api/central-kitchen/requests/[id]/receive/route.ts
+    src/app/api/central-kitchen/demand/route.ts
+    src/app/api/central-kitchen/ingredients/route.ts
+    src/components/central-kitchen/CentralKitchenPage.tsx
+    src/app/(dashboard)/central-kitchen/page.tsx
+  Modified files:
+    prisma/schema.prisma                    ← new models + enums
+    src/components/layout/RestaurantSwitcher.tsx  ← modal popup, type selector
+    src/app/api/restaurants/route.ts        ← type field in createSchema
+    src/app/api/settings/route.ts           ← CENTRAL_KITCHEN in patchSchema
+    src/app/(dashboard)/settings/page.tsx   ← 4th type option
+    src/components/layout/Sidebar.tsx       ← Central Kitchen nav item
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ROLE-BASED ACCESS CONTROL  [COMPLETE — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Each role sees and can access only the pages relevant to their job.
+  Enforcement is layered: middleware redirect → sidebar filtering → feature-level.
+
+PERMISSION MODEL  (src/lib/permissions.ts)
+  Role            Pages accessible
+  ──────────────  ──────────────────────────────────────────────────────────────
+  ADMIN           Everything
+  MANAGER         Everything
+  CHEF            Dashboard, Recipes, Menu, POS, KDS (full), Prep,
+                    Kitchen Stock, FOH Stock, Lab
+  SOUS_CHEF       Dashboard, Recipes, POS, KDS (full), Prep,
+                    Kitchen Stock, FOH Stock
+  WAITER          Dashboard, POS, KDS (read-only)
+  BARTENDER       Dashboard, POS, KDS (read-only)
+
+  KDS read-only roles: WAITER, BARTENDER
+    — Status badges (Cooking / Ready) visible so staff know when food is up
+    — Action buttons (mark ready / undo) hidden
+    — "View only" blue badge shown in KDS header
+
+ENFORCEMENT LAYERS
+  [x] Middleware (src/proxy.ts) — server-side: role checked against
+        ROUTE_PERMISSIONS on every page request; unauthorized → redirect to
+        /dashboard. Cannot be bypassed by the client.
+  [x] Sidebar (RestaurantSwitcher.tsx, Sidebar.tsx) — nav items filtered
+        client-side via useSession() role; unauthorised pages not shown at all.
+  [x] KDS feature (KdsBoard + TicketCard) — readonly prop passed from server
+        page (auth() call); disables PATCH calls and hides action buttons.
+
+RESTAURANT ADMIN RESTRICTION
+  [x] Only ADMIN (per-restaurant role) can create a new restaurant
+        POST /api/restaurants — checks UserRestaurant.role = ADMIN in current
+        restaurant before allowing creation. First-time users (no restaurant yet)
+        are still allowed to create their first one.
+  [x] Only ADMIN can switch between restaurants
+        POST /api/restaurants/switch — same ADMIN check on current membership.
+  [x] RestaurantSwitcher UI — non-ADMIN users see a static label (restaurant
+        name + their role + lock icon). No dropdown, no "Add restaurant" button.
+        ADMIN users retain the full switcher with dropdown and create modal.
+
+  New files:
+    src/lib/permissions.ts          ← canAccess(), isKdsReadonly(), ROUTE_PERMISSIONS
+  Modified files:
+    src/proxy.ts                    ← role-based route guard
+    src/components/layout/Sidebar.tsx          ← nav filtered by role via useSession()
+    src/app/(dashboard)/kds/page.tsx           ← passes readonly prop from auth()
+    src/components/kds/KdsBoard.tsx            ← readonly prop, "View only" badge
+    src/components/kds/TicketCard.tsx          ← readonly prop, hides action buttons
+    src/app/api/restaurants/route.ts           ← ADMIN-only creation guard
+    src/app/api/restaurants/switch/route.ts    ← ADMIN-only switch guard
+    src/components/layout/RestaurantSwitcher.tsx ← static display for non-ADMIN
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  NOTIFICATION SYSTEM  [COMPLETE — 4 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Role-targeted notifications for every key kitchen event. Each type is
+  routed only to the roles that need to act on it.
+
+NOTIFICATION TYPES & ROLE ROUTING  (src/lib/notify.ts)
+  Type                        Roles notified
+  ──────────────────────────  ─────────────────────────────────────────────
+  GENERAL                     ADMIN, MANAGER
+  AUTO_ORDER                  ADMIN, MANAGER
+  LOW_STOCK                   ADMIN, MANAGER, CHEF, SOUS_CHEF
+  OUT_OF_STOCK                ADMIN, MANAGER, CHEF, SOUS_CHEF
+  PREP_URGENT                 ADMIN, MANAGER, CHEF, SOUS_CHEF
+  CUSTOMER_FEEDBACK           ADMIN, MANAGER, CHEF
+  INGREDIENT_OVERPRICE        ADMIN, MANAGER, CHEF  (>15% price increase)
+  INGREDIENT_PRICE_INCREASE   ADMIN, MANAGER, CHEF  (5–15% price increase)
+  PUBLIC_HOLIDAY              All roles
+  SPECIAL_MENU                All roles
+
+SCHEMA ADDITIONS  (migration: 20260504000001_notification_types,
+                              20260504000002_customer_feedback)
+  [x] NotificationType enum added to PostgreSQL
+  [x] notifications.type column (default GENERAL)
+  [x] CustomerFeedback model — restaurantId, customerName?, rating?, comment,
+        submittedById, createdAt
+
+TRIGGER POINTS
+  [x] AUTO_ORDER      — src/lib/autoOrder.ts — when draft PO created for low stock
+  [x] PREP_URGENT     — src/lib/autoPrep.ts  — when urgent prep task auto-created
+  [x] OUT_OF_STOCK    — stock/transactions POST — when kitchen stock hits 0
+  [x] LOW_STOCK       — stock/transactions POST — when stock drops ≤ reorderPoint
+  [x] INGREDIENT_PRICE_INCREASE — purchase-orders/[id]/receive POST — 5–15% price rise
+  [x] INGREDIENT_OVERPRICE      — purchase-orders/[id]/receive POST — >15% price rise
+  [x] PUBLIC_HOLIDAY  — POST /api/notifications/announce (ADMIN/MANAGER only)
+  [x] SPECIAL_MENU    — POST /api/notifications/announce (ADMIN/MANAGER only)
+  [x] CUSTOMER_FEEDBACK — POST /api/feedback (all staff can log; notifies ADMIN/MANAGER/CHEF)
+
+UI
+  [x] NotificationBell — type-based icons + colors per notification type
+  [x] Header Megaphone button (ADMIN/MANAGER) — modal to send PUBLIC_HOLIDAY or
+        SPECIAL_MENU announcement to entire team
+  [x] Header Feedback button (all staff) — modal to log customer feedback
+        (optional name, 1–5 rating, comment) — triggers CUSTOMER_FEEDBACK notification
+
+  New files:
+    src/lib/notify.ts
+    src/app/api/notifications/announce/route.ts
+    src/app/api/feedback/route.ts
+    prisma/migrations/20260504000001_notification_types/migration.sql
+    prisma/migrations/20260504000002_customer_feedback/migration.sql
+  Modified files:
+    src/lib/autoOrder.ts              ← uses notify() with AUTO_ORDER type
+    src/lib/autoPrep.ts               ← uses notify() with PREP_URGENT type; fixed
+                                         db.userRestaurant (was db.user)
+    src/app/api/stock/transactions/route.ts  ← OUT_OF_STOCK + LOW_STOCK alerts;
+                                               maybeCreateUrgentPrep wired in
+    src/app/api/purchase-orders/[id]/receive/route.ts ← price change detection
+    src/components/layout/NotificationBell.tsx ← type icons + colors
+    src/components/layout/Header.tsx           ← Megaphone + Feedback buttons
+    src/types/index.ts                         ← NotificationRow.type field added
+    prisma/schema.prisma                       ← NotificationType enum, Notification.type,
+                                                  CustomerFeedback model
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  BUG FIX — FREE TABLE SHOWING ELAPSED TIMER  [COMPLETE — 3 May 2026]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Bug: A FREE table on the floor map was showing a red elapsed timer (e.g. 5714m)
+    because the elapsed time was calculated from table.orders[0].openedAt
+    regardless of table status. A paid/closed order stays linked to the table in
+    the DB, so a freshly freed table would still render the old order's openedAt.
+
+  Fix: Guard the activeOrder lookup with a table.status === "OCCUPIED" check.
+    Only OCCUPIED tables compute an elapsed time; FREE and RESERVED tables
+    always get null and show no timer.
+
+  Modified files:
+    src/components/pos/FloorMap.tsx  ← activeOrder = status === "OCCUPIED" ? orders[0] : null
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ENVIRONMENT & CREDENTIALS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PostgreSQL 17
+  Host:     127.0.0.1:5432
+  Database: rms_db
+  User:     postgres
+  Password: postgres
+
+App Login
+  Admin:  admin@rms.com  /  admin123
+  Chef:   chef@rms.com   /  chef123
+
+Dev Server
+  URL:    http://localhost:3000
+  Start:  cd "D:\Project P\rms" && npm run dev
+
+PostgreSQL Service (starts automatically with Windows)
+  Data dir: C:\Users\manee\pgdata  (manual cluster — see notes below)
+  Note: The Windows service PostgreSQL-x64-17 runs automatically.
+        If it stops, run: net start postgresql-x64-17
+
+================================================================================

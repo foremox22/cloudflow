@@ -1,0 +1,53 @@
+Based on your codebase, you already have a head start — you have RestaurantSwitcher, role-based auth, and
+  per-restaurant data. Here's the roadmap:
+
+  ---
+  Multi-Tenancy (Most Critical)
+
+  Your current model likely has restaurants scoped per user. For SaaS you need every table in Prisma scoped to an
+  Organization (tenant). Two approaches:
+
+  - Shared database, shared schema (simplest) — add organizationId to every table, enforce it in every query. You're
+  probably close to this already.
+  - Shared database, separate schema — one Postgres schema per tenant. Better isolation, more ops complexity.
+
+  For a restaurant SaaS, shared schema with row-level scoping is the right call at this stage.
+
+  ---
+  What to Build
+
+  ┌──────────┬───────────────────────┬────────────────────────────────────────────────────────────────┐
+  │ Priority │         What          │                              Why                               │
+  ├──────────┼───────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ 1        │ Org/tenant model      │ Every restaurant = one org, with its own users, data, settings │
+  ├──────────┼───────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ 2        │ Self-serve onboarding │ Sign up → create org → invite team, no manual setup            │
+  ├──────────┼───────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ 3        │ Billing (Stripe)      │ Subscription plans tied to org, usage limits per plan          │
+  ├──────────┼───────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ 4        │ Plan-gated features   │ e.g. Analytics = Pro only, Central Kitchen = Enterprise        │
+  ├──────────┼───────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ 5        │ Admin super-dashboard │ You need to see all tenants, usage, churn, support             │
+  ├──────────┼───────────────────────┼────────────────────────────────────────────────────────────────┤
+  │ 6        │ Audit logs            │ Every action logged per tenant — required for compliance       │
+  └──────────┴───────────────────────┴────────────────────────────────────────────────────────────────┘
+
+  ---
+  Immediate Code Changes
+
+  1. Prisma — add Organization model, add organizationId to every model that doesn't have it, add a middleware that
+  auto-injects the tenant filter on every query
+  2. Auth — store organizationId on the session/JWT, middleware validates tenant access on every request
+  3. Stripe — Organization has a stripeCustomerId, subscriptionStatus, planTier
+  4. Onboarding — a /setup flow after signup: create org → set restaurant name/timezone → invite first staff member
+
+  ---
+  The One Thing That Breaks Most SaaS Apps
+
+  Tenant data leakage — a bug where user A sees user B's data. Guard against this by:
+  - A Prisma middleware that throws if a query hits a multi-tenant table without organizationId
+  - Never trusting organizationId from the client — always read it from the server session
+
+  ---
+  Your stack (Next.js, Prisma, NextAuth) is solid for SaaS. The biggest lift is the tenant scoping refactor — want me to
+   start with the Prisma schema and middleware for that?

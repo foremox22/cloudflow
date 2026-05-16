@@ -33,9 +33,24 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Claude Code
+.claude/
+
+# Dev logs and notes
+dev-server.log
+progress.txt
+newtodo.txt
+"scaleup project.txt"
+SKILL.md
+
+# Uploads (handled by Supabase Storage in production)
+public/uploads/
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma

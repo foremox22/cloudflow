@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "ingredients" ADD COLUMN     "kcalPer100g" DOUBLE PRECISION,
+ADD COLUMN     "kjPer100g" DOUBLE PRECISION;

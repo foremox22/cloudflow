@@ -1,0 +1,47 @@
+head chef access to supplier - reorder 
+
+reataurant detail - more eg opentime day?
+
+
+notification system - for each role 
+
+Head chef - out of stock, prep urgent , Customer feedback, Ingredient Overprice (when invoiced automatic check), Ingredient increasing price eg. salmon 42.5 to 50 (talk to owner), Public holiday, special Menu,
+Manager and each role
+
+
+more edit
+- sing out (confirmation)
+recipe Delete popup (just de-active)
+recipe update version
+Generate Today Popup (check any alert notification to pop up)
+
+
+
+New Function 
+Cafe menu  - POS should different
+Dine in Restaurant - Set menu (Manager and head chef can make it)
+
+Staff Roaster  
+(for manager , head chef to create) 
+(All staff click confirm - check roaster by email with link login/just confirm via link / reject+ note why which day can't work then approve/not approve) 
+(Sick leave, Annual leave)
+(Holiday Approve) 
+(Calendar Roaster)
+
+Dash board each role should have own dashboard
+Big dashboard for owner
+
+
+
+
+
+
+special mechanic 
+face auto login  
+AI help to check for special requirement e.g. strong allergen Onion
+
+
+
+
+----*******------------**********--------********-*-*-*-*-*-*-*-
+Last phase Deploy and test

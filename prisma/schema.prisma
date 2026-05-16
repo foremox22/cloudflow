@@ -1,0 +1,1149 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum TableStatus {
+  FREE
+  OCCUPIED
+  RESERVED
+}
+
+enum OrderStatus {
+  OPEN
+  HOLD
+  PAID
+  VOID
+}
+
+enum OrderItemStatus {
+  PENDING
+  COOKING
+  READY
+  SERVED
+  VOID
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  SPLIT
+  VOUCHER
+}
+
+enum FohCategory {
+  BEVERAGE
+  PACKAGING
+  SUPPLIES
+  OTHER
+}
+
+enum StockTxType {
+  IN
+  OUT
+  WASTE
+  ADJUST
+}
+
+enum StockItemType {
+  KITCHEN
+  FOH
+}
+
+enum PoStatus {
+  DRAFT
+  APPROVED
+  SENT
+  RECEIVED
+  CANCELLED
+}
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+}
+
+enum RestaurantType {
+  CAFE
+  DINE_IN
+  TAKEAWAY
+  CENTRAL_KITCHEN
+}
+
+enum DistributionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  DISPATCHED
+  RECEIVED
+  CANCELLED
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  SEATED
+  CANCELLED
+  NO_SHOW
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  HEAD_CHEF
+  CHEF
+  SOUS_CHEF
+  WAITER
+  BARTENDER
+}
+
+enum RecipeCategory {
+  STARTER
+  MAIN
+  DESSERT
+  BEVERAGE
+  SIDE
+  SAUCE
+  BREAD
+  OTHER
+}
+
+enum IngredientCategory {
+  MEAT
+  SEAFOOD
+  VEGETABLE
+  FRUIT
+  DAIRY
+  GRAIN
+  SPICE
+  CONDIMENT
+  OIL
+  ALCOHOL
+  SOFT_DRINK
+  OTHER
+}
+
+enum PrepTaskType {
+  ROUTINE
+  URGENT
+}
+
+enum PrepStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum Unit {
+  KG
+  G
+  LB
+  OZ
+  L
+  ML
+  CUP
+  TBSP
+  TSP
+  PIECE
+  BUNCH
+  SLICE
+  PORTION
+}
+
+// ─── Restaurant ───────────────────────────────────────────────────────────────
+
+model Restaurant {
+  id           String         @id @default(cuid())
+  name         String
+  type         RestaurantType @default(DINE_IN)
+  address      String?
+  phone        String?
+  timezone     String         @default("UTC")
+  logoUrl      String?
+  openingHours  Json?
+  rosterConfig  Json?
+  active        Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  members           UserRestaurant[]
+  tables            RestaurantTable[]
+  menuItems         MenuItem[]
+  orders            Order[]
+  recipes           Recipe[]
+  ingredients       Ingredient[]
+  fohItems          FohItem[]
+  stockTransactions StockTransaction[]
+  suppliers         Supplier[]
+  purchaseOrders    PurchaseOrder[]
+  reservations      Reservation[]
+  prepTasks         PrepTask[]
+  prepRoutines      PrepRoutine[]
+  notifications     Notification[]
+  labSessions       LabSession[]
+  customerFeedback  CustomerFeedback[]
+  rosterWeeks       RosterWeek[]
+  rosterShifts      RosterShift[]
+  leaveRequests     LeaveRequest[]
+
+  recipeAssignments RecipeAssignment[]
+  modifierGroups    ModifierGroup[]
+  expenses          Expense[]
+  revenueTargets    RevenueTarget[]
+  payrollRuns       PayrollRun[]
+  promotions        Promotion[]
+
+  // Central Kitchen relations
+  ckLinks          CentralKitchenLink[] @relation("CKAsSource")
+  linkedToCKs      CentralKitchenLink[] @relation("CKAsTarget")
+  outgoingRequests DistributionRequest[] @relation("DRFromRestaurant")
+  incomingRequests DistributionRequest[] @relation("DRToCentralKitchen")
+
+  @@map("restaurants")
+}
+
+model UserRestaurant {
+  userId       String
+  restaurantId String
+  role         Role   @default(WAITER)
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@id([userId, restaurantId])
+  @@map("user_restaurants")
+}
+
+// ─── Customers ───────────────────────────────────────────────────────────────
+
+model Customer {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String?  @unique
+  email        String?
+  dietaryTags  String[] @default([])
+  allergenTags String[] @default([])
+  notes        String?
+  visitCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reservations Reservation[]
+  orders       Order[]
+
+  @@map("customers")
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(WAITER)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurants              UserRestaurant[]
+  recipes                  Recipe[]
+  recipeVersions           RecipeVersion[]
+  sessions                 Session[]
+  ordersAsServer           Order[]
+  stockTransactions        StockTransaction[]
+  purchaseOrdersCreated    PurchaseOrder[]    @relation("PoCreatedBy")
+  purchaseOrdersApproved   PurchaseOrder[]    @relation("PoApprovedBy")
+  notifications            Notification[]
+  labSessions              LabSession[]
+  labRecipesReviewed       LabRecipe[]        @relation("LabRecipeReview")
+  reservationsCreated      Reservation[]
+  prepTasksCreated            PrepTask[]
+  distributionRequestsCreated DistributionRequest[]
+  customerFeedbackSubmitted   CustomerFeedback[]
+  rosterWeeksCreated          RosterWeek[]   @relation("RosterCreatedBy")
+  shifts                      RosterShift[]  @relation("UserShifts")
+  rosterInvites               RosterInvite[] @relation("UserRosterInvites")
+  leaveRequests               LeaveRequest[] @relation("UserLeaveRequests")
+  leaveReviewed               LeaveRequest[] @relation("LeaveReviewedBy")
+  expensesCreated             Expense[]
+  payrollRunsCreated          PayrollRun[]   @relation("PayrollCreatedBy")
+  payrollEntries              PayrollEntry[] @relation("PayrollEntries")
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ─── Allergens ────────────────────────────────────────────────────────────────
+
+model Allergen {
+  id   String  @id @default(cuid())
+  name String  @unique
+  icon String?
+
+  recipeAllergens     RecipeAllergen[]
+  ingredientAllergens IngredientAllergen[]
+
+  @@map("allergens")
+}
+
+// ─── Ingredients ──────────────────────────────────────────────────────────────
+
+model Ingredient {
+  id           String             @id @default(cuid())
+  restaurantId String
+  name         String
+  category     IngredientCategory @default(OTHER)
+  unit         Unit               @default(KG)
+  costPerUnit  Float              @default(0)
+  currentStock Float              @default(0)
+  parLevel     Float              @default(0)
+  reorderPoint Float              @default(0)
+  reorderQty   Float              @default(0)
+  active       Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  kcalPer100g     Float?
+  kjPer100g       Float?
+  imageUrl        String?
+  priceEstimated  Boolean @default(false)
+  yieldRate       Float   @default(1.0)
+
+  restaurant          Restaurant           @relation(fields: [restaurantId], references: [id])
+  recipeIngredients   RecipeIngredient[]
+  ingredientAllergens IngredientAllergen[]
+  supplierProducts    SupplierProduct[]
+  poLineItems         PoLineItem[]
+
+  prepRecipeId    String?
+  batchYield      Float?
+  prepRecipe      Recipe?       @relation("PrepRecipeIngredient", fields: [prepRecipeId], references: [id], onDelete: SetNull)
+  prepTasks       PrepTask[]
+  prepRoutines    PrepRoutine[]
+  distributionItems DistributionItem[]
+
+  @@unique([restaurantId, name])
+  @@index([restaurantId, active])
+  @@map("ingredients")
+}
+
+model IngredientAllergen {
+  ingredientId String
+  allergenId   String
+
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  allergen   Allergen   @relation(fields: [allergenId], references: [id], onDelete: Cascade)
+
+  @@id([ingredientId, allergenId])
+  @@map("ingredient_allergens")
+}
+
+// ─── Recipes ──────────────────────────────────────────────────────────────────
+
+model Recipe {
+  id           String         @id @default(cuid())
+  restaurantId String
+  name         String
+  category     RecipeCategory @default(OTHER)
+  description  String?
+  method       String?
+  prepTime     Int            @default(0)
+  cookTime     Int            @default(0)
+  servings     Int            @default(1)
+  sellingPrice Float          @default(0)
+  imageUrl     String?
+  dietaryTags  String[]       @default([])
+  active       Boolean        @default(true)
+  isMaster     Boolean        @default(false)
+  createdById  String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  restaurant   Restaurant          @relation(fields: [restaurantId], references: [id])
+  createdBy    User                @relation(fields: [createdById], references: [id])
+  ingredients  RecipeIngredient[]
+  allergens    RecipeAllergen[]
+  versions     RecipeVersion[]
+  menuItems    MenuItem[]
+  prepForItems Ingredient[]        @relation("PrepRecipeIngredient")
+  assignments  RecipeAssignment[]
+
+  @@map("recipes")
+}
+
+model RecipeAssignment {
+  id           String   @id @default(cuid())
+  recipeId     String
+  restaurantId String
+  assignedAt   DateTime @default(now())
+
+  recipe     Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, restaurantId])
+  @@map("recipe_assignments")
+}
+
+model RecipeIngredient {
+  id           String @id @default(cuid())
+  recipeId     String
+  ingredientId String
+  quantity     Float
+  unit         Unit
+
+  recipe     Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([recipeId, ingredientId])
+  @@map("recipe_ingredients")
+}
+
+model RecipeAllergen {
+  recipeId   String
+  allergenId String
+
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  allergen Allergen @relation(fields: [allergenId], references: [id])
+
+  @@id([recipeId, allergenId])
+  @@map("recipe_allergens")
+}
+
+model RecipeVersion {
+  id           String   @id @default(cuid())
+  recipeId     String
+  version      Int
+  snapshotJson Json
+  changedById  String
+  createdAt    DateTime @default(now())
+
+  recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  changedBy User   @relation(fields: [changedById], references: [id])
+
+  @@unique([recipeId, version])
+  @@map("recipe_versions")
+}
+
+// ─── Phase 2: Operations Core ─────────────────────────────────────────────────
+
+model RestaurantTable {
+  id           String      @id @default(cuid())
+  restaurantId String
+  number       Int
+  section      String      @default("Main")
+  capacity     Int         @default(4)
+  status       TableStatus @default(FREE)
+
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id])
+  orders       Order[]
+  reservations Reservation[]
+
+  @@unique([restaurantId, number])
+  @@map("tables")
+}
+
+model MenuItem {
+  id           String         @id @default(cuid())
+  restaurantId String
+  recipeId     String?
+  name         String
+  price        Float
+  category     RecipeCategory @default(OTHER)
+  subcategory  String?
+  available    Boolean        @default(true)
+  imageUrl     String?
+  sortOrder    Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  restaurant     Restaurant      @relation(fields: [restaurantId], references: [id])
+  recipe         Recipe?         @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  orderItems     OrderItem[]
+  modifierGroups ModifierGroup[]
+
+  @@map("menu_items")
+}
+
+model Order {
+  id            String         @id @default(cuid())
+  restaurantId  String
+  type          OrderType      @default(DINE_IN)
+  tableId       String?
+  customerId    String?
+  serverId      String
+  customerName  String?
+  customerPhone String?
+  status        OrderStatus    @default(OPEN)
+  total         Float          @default(0)
+  tax           Float          @default(0)
+  discount      Float          @default(0)
+  serveNote     String?
+  paymentMethod PaymentMethod?
+  cashPaid      Float?
+  cardPaid      Float?
+  voucherPaid   Float?
+  voucherCode   String?
+  openedAt      DateTime       @default(now())
+  closedAt      DateTime?
+
+  restaurant Restaurant      @relation(fields: [restaurantId], references: [id])
+  table      RestaurantTable? @relation(fields: [tableId], references: [id])
+  customer   Customer?        @relation(fields: [customerId], references: [id])
+  server     User             @relation(fields: [serverId], references: [id])
+  items      OrderItem[]
+
+  @@index([restaurantId, status])
+  @@index([closedAt])
+  @@map("orders")
+}
+
+model Reservation {
+  id            String            @id @default(cuid())
+  restaurantId  String
+  tableId       String?
+  customerId    String?
+  customerName  String
+  customerPhone String?
+  partySize     Int               @default(2)
+  reservedFor   DateTime
+  notes         String?
+  specialTags   String[]          @default([])
+  dietaryTags   String[]          @default([])
+  allergenTags  String[]          @default([])
+  status        ReservationStatus @default(PENDING)
+  createdById   String
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  restaurant Restaurant       @relation(fields: [restaurantId], references: [id])
+  table      RestaurantTable? @relation(fields: [tableId], references: [id])
+  customer   Customer?       @relation(fields: [customerId], references: [id])
+  createdBy  User            @relation(fields: [createdById], references: [id])
+
+  @@map("reservations")
+}
+
+model OrderItem {
+  id              String          @id @default(cuid())
+  orderId         String
+  menuItemId      String
+  quantity        Int             @default(1)
+  unitPrice       Float
+  notes           String?
+  specialRequests String[]        @default([])
+  courseNumber    Int             @default(1)
+  isSharing       Boolean         @default(true)
+  status          OrderItemStatus @default(PENDING)
+  voidReason      String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId, status])
+  @@map("order_items")
+}
+
+model FohItem {
+  id           String      @id @default(cuid())
+  restaurantId String
+  name         String
+  category     FohCategory @default(OTHER)
+  unit         Unit        @default(PIECE)
+  unitLabel    String?
+  costPerUnit  Float       @default(0)
+  currentStock Float       @default(0)
+  parLevel     Float       @default(0)
+  reorderPoint Float       @default(0)
+  reorderQty   Float       @default(0)
+  active       Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([restaurantId, name])
+  @@map("foh_items")
+}
+
+model StockTransaction {
+  id           String        @id @default(cuid())
+  restaurantId String
+  itemType     StockItemType
+  itemId       String
+  type         StockTxType
+  quantity     Float
+  referenceId  String?
+  notes        String?
+  createdById  String
+  createdAt    DateTime      @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  createdBy  User       @relation(fields: [createdById], references: [id])
+
+  @@index([restaurantId, createdAt])
+  @@map("stock_transactions")
+}
+
+// ─── Phase 3: Intelligence Layer ──────────────────────────────────────────────
+
+model Supplier {
+  id           String   @id @default(cuid())
+  restaurantId String
+  name         String
+  email        String?
+  phone        String?
+  address      String?
+  contactName  String?
+  leadDays     Int      @default(3)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant     Restaurant        @relation(fields: [restaurantId], references: [id])
+  products       SupplierProduct[]
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([restaurantId, name])
+  @@map("suppliers")
+}
+
+model SupplierProduct {
+  id           String   @id @default(cuid())
+  supplierId   String
+  ingredientId String
+  unitPrice    Float    @default(0)
+  unit         Unit     @default(KG)
+  isPreferred  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  supplier   Supplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([supplierId, ingredientId])
+  @@map("supplier_products")
+}
+
+model PurchaseOrder {
+  id           String    @id @default(cuid())
+  restaurantId String
+  supplierId   String
+  status       PoStatus  @default(DRAFT)
+  notes        String?
+  expectedAt   DateTime?
+  receivedAt   DateTime?
+  approvedById String?
+  createdById  String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  restaurant Restaurant   @relation(fields: [restaurantId], references: [id])
+  supplier   Supplier      @relation(fields: [supplierId], references: [id])
+  approvedBy User?         @relation("PoApprovedBy", fields: [approvedById], references: [id])
+  createdBy  User          @relation("PoCreatedBy", fields: [createdById], references: [id])
+  lineItems  PoLineItem[]
+
+  @@map("purchase_orders")
+}
+
+model PoLineItem {
+  id           String @id @default(cuid())
+  poId         String
+  ingredientId String
+  quantity     Float
+  unitPrice    Float  @default(0)
+  receivedQty  Float?
+
+  po         PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  ingredient Ingredient    @relation(fields: [ingredientId], references: [id])
+
+  @@map("po_line_items")
+}
+
+enum NotificationType {
+  GENERAL
+  AUTO_ORDER
+  LOW_STOCK
+  OUT_OF_STOCK
+  PREP_URGENT
+  CUSTOMER_FEEDBACK
+  INGREDIENT_OVERPRICE
+  INGREDIENT_PRICE_INCREASE
+  PUBLIC_HOLIDAY
+  SPECIAL_MENU
+  ROSTER
+}
+
+model Notification {
+  id           String           @id @default(cuid())
+  restaurantId String
+  userId       String
+  type         NotificationType @default(GENERAL)
+  title        String
+  body         String
+  read         Boolean          @default(false)
+  link         String?
+  createdAt    DateTime         @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+// ─── Phase 3b: Prep System ───────────────────────────────────────────────────
+
+model PrepTask {
+  id           String       @id @default(cuid())
+  restaurantId String
+  ingredientId String
+  type         PrepTaskType @default(ROUTINE)
+  status       PrepStatus   @default(PENDING)
+  targetQty    Float
+  notes        String?
+  scheduledFor DateTime?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdById  String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+  createdBy  User       @relation(fields: [createdById], references: [id])
+
+  @@index([restaurantId, status])
+  @@map("prep_tasks")
+}
+
+model PrepRoutine {
+  id           String   @id @default(cuid())
+  restaurantId String
+  ingredientId String
+  targetQty    Float
+  daysOfWeek   Int[]    @default([1, 2, 3, 4, 5])
+  triggerTime  String   @default("08:00")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@map("prep_routines")
+}
+
+// ─── Phase 4: AI Kitchen Lab ──────────────────────────────────────────────────
+
+enum LabMessageRole {
+  USER
+  ASSISTANT
+}
+
+enum LabRecipeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LabSession {
+  id           String   @id @default(cuid())
+  restaurantId String
+  userId       String
+  title        String   @default("New Lab Session")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant   @relation(fields: [restaurantId], references: [id])
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages   LabMessage[]
+  labRecipes LabRecipe[]
+
+  @@map("lab_sessions")
+}
+
+model LabMessage {
+  id        String         @id @default(cuid())
+  sessionId String
+  role      LabMessageRole
+  content   String
+  createdAt DateTime       @default(now())
+
+  session LabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@map("lab_messages")
+}
+
+model LabRecipe {
+  id            String          @id @default(cuid())
+  sessionId     String
+  name          String
+  recipeJson    Json
+  status        LabRecipeStatus @default(PENDING)
+  reviewedById  String?
+  reviewedAt    DateTime?
+  savedRecipeId String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  session    LabSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  reviewedBy User?      @relation("LabRecipeReview", fields: [reviewedById], references: [id])
+
+  @@map("lab_recipes")
+}
+
+// ─── Phase 6: Central Kitchen ────────────────────────────────────────────────
+
+model CentralKitchenLink {
+  centralKitchenId   String
+  linkedRestaurantId String
+  createdAt          DateTime @default(now())
+
+  centralKitchen   Restaurant @relation("CKAsSource", fields: [centralKitchenId], references: [id], onDelete: Cascade)
+  linkedRestaurant Restaurant @relation("CKAsTarget", fields: [linkedRestaurantId], references: [id], onDelete: Cascade)
+
+  @@id([centralKitchenId, linkedRestaurantId])
+  @@map("central_kitchen_links")
+}
+
+model DistributionRequest {
+  id               String             @id @default(cuid())
+  fromRestaurantId String
+  centralKitchenId String
+  status           DistributionStatus @default(DRAFT)
+  neededBy         DateTime?
+  notes            String?
+  createdById      String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  fromRestaurant Restaurant        @relation("DRFromRestaurant", fields: [fromRestaurantId], references: [id])
+  centralKitchen Restaurant        @relation("DRToCentralKitchen", fields: [centralKitchenId], references: [id])
+  createdBy      User              @relation(fields: [createdById], references: [id])
+  items          DistributionItem[]
+
+  @@map("distribution_requests")
+}
+
+model DistributionItem {
+  id             String @id @default(cuid())
+  requestId      String
+  ckIngredientId String
+  ingredientName String
+  unit           Unit   @default(KG)
+  requestedQty   Float
+  approvedQty    Float?
+  dispatchedQty  Float?
+  receivedQty    Float?
+
+  request      DistributionRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  ckIngredient Ingredient          @relation(fields: [ckIngredientId], references: [id])
+
+  @@map("distribution_items")
+}
+
+// ─── POS Modifier Groups ─────────────────────────────────────────────────────
+
+model ModifierGroup {
+  id           String   @id @default(cuid())
+  restaurantId String
+  menuItemId   String?
+  name         String
+  color        String   @default("gray")
+  appliesTo    String[] @default([])
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuItem   MenuItem?     @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  tags       ModifierTag[]
+
+  @@map("modifier_groups")
+}
+
+model ModifierTag {
+  id        String @id @default(cuid())
+  groupId   String
+  label     String
+  price     Float  @default(0)
+  sortOrder Int    @default(0)
+
+  group ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, label])
+  @@map("modifier_tags")
+}
+
+// ─── Customer Feedback ───────────────────────────────────────────────────────
+
+model CustomerFeedback {
+  id            String   @id @default(cuid())
+  restaurantId  String
+  customerName  String?
+  rating        Int?
+  comment       String
+  submittedById String
+  createdAt     DateTime @default(now())
+
+  restaurant  Restaurant @relation(fields: [restaurantId], references: [id])
+  submittedBy User       @relation(fields: [submittedById], references: [id])
+
+  @@map("customer_feedback")
+}
+
+// ─── Staff Roster ─────────────────────────────────────────────────────────────
+
+enum RosterStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ShiftConfirmStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  EXCUSED
+  OVERRIDE
+}
+
+enum LeaveType {
+  SICK
+  ANNUAL
+  HOLIDAY
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RosterWeek {
+  id           String       @id @default(cuid())
+  restaurantId String
+  weekStart    DateTime
+  notes        String?
+  status       RosterStatus @default(DRAFT)
+  publishedAt  DateTime?
+  createdById  String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  restaurant Restaurant    @relation(fields: [restaurantId], references: [id])
+  createdBy  User          @relation("RosterCreatedBy", fields: [createdById], references: [id])
+  shifts     RosterShift[]
+  invites    RosterInvite[]
+
+  @@map("roster_weeks")
+}
+
+model RosterShift {
+  id            String             @id @default(cuid())
+  rosterId      String
+  restaurantId  String
+  userId        String
+  date          DateTime
+  startTime     String
+  endTime       String
+  position      String?
+  notes         String?
+  session       String?
+  confirmStatus ShiftConfirmStatus @default(PENDING)
+  confirmNote   String?
+  confirmedAt   DateTime?
+  createdAt     DateTime           @default(now())
+
+  roster     RosterWeek @relation(fields: [rosterId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  user       User       @relation("UserShifts", fields: [userId], references: [id])
+
+  @@index([restaurantId, date])
+  @@map("roster_shifts")
+}
+
+model RosterInvite {
+  id       String   @id @default(cuid())
+  rosterId String
+  userId   String
+  token    String   @unique @default(cuid())
+  sentAt   DateTime @default(now())
+
+  roster RosterWeek @relation(fields: [rosterId], references: [id], onDelete: Cascade)
+  user   User       @relation("UserRosterInvites", fields: [userId], references: [id])
+
+  @@unique([rosterId, userId])
+  @@map("roster_invites")
+}
+
+model LeaveRequest {
+  id           String      @id @default(cuid())
+  restaurantId String
+  userId       String
+  type         LeaveType
+  startDate    DateTime
+  endDate      DateTime
+  reason       String?
+  status       LeaveStatus @default(PENDING)
+  reviewedById String?
+  reviewNote   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  user       User       @relation("UserLeaveRequests", fields: [userId], references: [id])
+  reviewedBy User?      @relation("LeaveReviewedBy", fields: [reviewedById], references: [id])
+
+  @@map("leave_requests")
+}
+
+// ─── Finance ──────────────────────────────────────────────────────────────────
+
+enum ExpenseCategory {
+  FOOD_BEV
+  UTILITIES
+  MAINTENANCE
+  MARKETING
+  RENT
+  EQUIPMENT
+  OTHER
+}
+
+enum TargetPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum PayrollStatus {
+  DRAFT
+  APPROVED
+  PAID
+}
+
+enum PromotionType {
+  PERCENTAGE
+  FIXED
+}
+
+model Expense {
+  id           String          @id @default(cuid())
+  restaurantId String
+  category     ExpenseCategory @default(OTHER)
+  description  String
+  amount       Float
+  date         DateTime
+  notes        String?
+  receiptUrl   String?
+  createdById  String
+  createdAt    DateTime        @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  createdBy  User       @relation(fields: [createdById], references: [id])
+
+  @@map("expenses")
+}
+
+model RevenueTarget {
+  id           String       @id @default(cuid())
+  restaurantId String
+  period       TargetPeriod
+  targetDate   DateTime
+  amount       Float
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([restaurantId, period, targetDate])
+  @@map("revenue_targets")
+}
+
+model PayrollRun {
+  id           String        @id @default(cuid())
+  restaurantId String
+  periodStart  DateTime
+  periodEnd    DateTime
+  status       PayrollStatus @default(DRAFT)
+  totalAmount  Float         @default(0)
+  notes        String?
+  createdById  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  restaurant Restaurant     @relation(fields: [restaurantId], references: [id])
+  createdBy  User           @relation("PayrollCreatedBy", fields: [createdById], references: [id])
+  entries    PayrollEntry[]
+
+  @@map("payroll_runs")
+}
+
+model PayrollEntry {
+  id           String  @id @default(cuid())
+  payrollRunId String
+  userId       String
+  userName     String
+  hoursWorked  Float
+  hourlyRate   Float   @default(0)
+  baseAmount   Float   @default(0)
+  bonus        Float   @default(0)
+  deductions   Float   @default(0)
+  netAmount    Float   @default(0)
+  notes        String?
+
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  user       User       @relation("PayrollEntries", fields: [userId], references: [id])
+
+  @@map("payroll_entries")
+}
+
+model Promotion {
+  id            String        @id @default(cuid())
+  restaurantId  String
+  name          String
+  code          String?
+  type          PromotionType @default(PERCENTAGE)
+  value         Float
+  minOrderValue Float         @default(0)
+  maxUses       Int?
+  usedCount     Int           @default(0)
+  startsAt      DateTime
+  endsAt        DateTime?
+  active        Boolean       @default(true)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([restaurantId, code])
+  @@map("promotions")
+}
