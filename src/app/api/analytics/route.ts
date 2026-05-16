@@ -133,13 +133,14 @@ export async function GET(req: NextRequest) {
   // ── Waste by category ──
   type WasteTxn = (typeof wasteTxns)[number];
   const kitchenWaste = wasteTxns.filter((t: WasteTxn) => t.itemType === "KITCHEN");
-  const wasteIngredients = kitchenWaste.length > 0
+  type WasteIngredient = { id: string; category: string; costPerUnit: number };
+  const wasteIngredients: WasteIngredient[] = kitchenWaste.length > 0
     ? await db.ingredient.findMany({
         where: { id: { in: kitchenWaste.map((t: (typeof kitchenWaste)[number]) => t.itemId) } },
         select: { id: true, category: true, costPerUnit: true },
       })
     : [];
-  const wMap = new Map(wasteIngredients.map((i: (typeof wasteIngredients)[number]) => [i.id, i]));
+  const wMap = new Map(wasteIngredients.map((i: WasteIngredient) => [i.id, i]));
   const wasteCatMap = new Map<string, { qty: number; cost: number }>();
   for (const tx of kitchenWaste) {
     const ing = wMap.get(tx.itemId);

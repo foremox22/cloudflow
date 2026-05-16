@@ -67,6 +67,42 @@ Prefer `npm run build` plus `npm run lint` for broad validation. Use database co
 - Follow existing NextAuth patterns around `auth.ts`, protected routes, and session handling.
 - Never expose secrets from `.env` in logs, UI, docs, or examples.
 
+## Known Bug: Next.js 16 Implicit-Any on Callback Parameters
+
+Next.js 16 runs a stricter TypeScript check at build time than `tsc --noEmit` locally. Prisma query results lose type inference in `.map()`, `.filter()`, and `.reduce()` callbacks during `npm run build`, even when the local check passes clean.
+
+**Always use these fix patterns when writing new API routes or page components:**
+
+```ts
+// map / filter on Prisma result
+type Row = (typeof prismaResult)[number];
+prismaResult.map((r: Row) => r.id)
+
+// reduce — always type the accumulator explicitly
+arr.reduce((s: number, x) => s + x.value, 0)
+
+// nested callbacks
+type RawRecipe = (typeof rawRecipes)[number];
+type Ingredient = RawRecipe["ingredients"][number];
+rawRecipes.map((r: RawRecipe) => ({
+  cost: r.ingredients.reduce((s: number, i: Ingredient) => s + i.cost, 0)
+}))
+
+// NEVER use .then((list) => list.map(...)) on Prisma queries inside Promise.all
+// Await the query first, then map separately
+const raw = await db.recipe.findMany({...});
+const result = raw.map((r: (typeof raw)[number]) => ({ ...r, extra: true }));
+```
+
+// ternary returning Prisma result | never[] — TypeScript resolves to {} — always annotate explicitly
+type WasteIngredient = { id: string; category: string; costPerUnit: number };
+const items: WasteIngredient[] = condition
+  ? await db.ingredient.findMany({ select: { id: true, category: true, costPerUnit: true } })
+  : [];
+```
+
+`tsc --noEmit` will NOT catch these — always do a full `npm run build` to validate.
+
 ## Implementation Habits
 
 - Search with `rg` or `rg --files` first.
