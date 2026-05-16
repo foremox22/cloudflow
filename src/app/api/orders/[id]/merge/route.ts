@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Source order is not active" }, { status: 400 });
   }
 
-  await db.$transaction(async (tx: Prisma.TransactionClient) => {
+  await db.$transaction(async (tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => {
     await tx.orderItem.updateMany({
       where: { orderId: sourceOrderId, status: { not: "VOID" } },
       data: { orderId: id },

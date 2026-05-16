@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -99,7 +98,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const deductedItems: { ingredientId: string; newStock: number }[] = [];
 
-  const order = await db.$transaction(async (tx: Prisma.TransactionClient) => {
+  const order = await db.$transaction(async (tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => {
     const updated = await tx.order.update({
       where: { id },
       data: updateData as never,

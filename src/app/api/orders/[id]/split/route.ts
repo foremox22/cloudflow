@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -35,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const userId = (session as { user?: { id?: string } }).user?.id;
   if (!userId) return NextResponse.json({ error: "No user in session" }, { status: 401 });
 
-  await db.$transaction(async (tx: Prisma.TransactionClient) => {
+  await db.$transaction(async (tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => {
     const newOrder = await tx.order.create({
       data: { restaurantId: sourceOrder.restaurantId, type: "DINE_IN", tableId, serverId: userId, status: "OPEN" },
     });

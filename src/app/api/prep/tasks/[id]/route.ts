@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -54,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const batchYield = task.ingredient.batchYield ?? 1;
     const batches = task.targetQty / batchYield;
 
-    await db.$transaction(async (tx: Prisma.TransactionClient) => {
+    await db.$transaction(async (tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => {
       await tx.prepTask.update({ where: { id }, data: updateData as never });
 
       // Add produced qty to prep item stock
