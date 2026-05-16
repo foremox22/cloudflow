@@ -41,13 +41,16 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const weekLabel = new Date(roster.weekStart).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
   // Upsert invites first (sequential, needed before parallel email/notify)
-  const inviteMap = new Map(roster.invites.map((i: (typeof roster.invites)[number]) => [i.userId, i]));
+  type RosterInvite = (typeof roster.invites)[number];
+  const inviteMap = new Map<string, RosterInvite>(
+    roster.invites.map((i: RosterInvite) => [i.userId, i] as [string, RosterInvite])
+  );
   for (const [userId] of userMap) {
     if (!inviteMap.has(userId)) {
       const invite = await db.rosterInvite.create({
         data: { rosterId: id, userId, token: randomUUID() },
       });
-      inviteMap.set(userId, invite);
+      inviteMap.set(userId, invite as RosterInvite);
     }
   }
 
