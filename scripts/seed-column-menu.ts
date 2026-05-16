@@ -115,7 +115,7 @@ async function main() {
     where: { restaurantId: RESTAURANT_ID },
     select: { name: true },
   });
-  const existingNames = new Set(existing.map((i) => i.name.toLowerCase()));
+  const existingNames = new Set(existing.map((i: { name: string }) => i.name.toLowerCase()));
 
   let created = 0;
   let skipped = 0;
