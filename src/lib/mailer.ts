@@ -94,7 +94,7 @@ export async function sendPoApprovalEmail(data: PoEmailData): Promise<void> {
     )
     .join("");
 
-  const total = data.lineItems.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
+  const total = data.lineItems.reduce((s: number, l) => s + l.quantity * l.unitPrice, 0);
 
   const html = `
     <div style="font-family:sans-serif;background:#111827;color:#f9fafb;padding:32px;border-radius:12px;max-width:600px">

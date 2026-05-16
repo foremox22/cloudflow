@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     return { ...e, baseAmount, netAmount };
   });
 
-  const totalAmount = entries.reduce((s, e) => s + e.netAmount, 0);
+  const totalAmount = entries.reduce((s: number, e) => s + e.netAmount, 0);
 
   const run = await db.payrollRun.create({
     data: {

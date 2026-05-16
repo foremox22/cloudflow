@@ -101,11 +101,12 @@ export async function GET(req: NextRequest) {
   }));
 
   // ── Summary ──
-  const totalRevenue = paidOrders.reduce((s, o) => s + o.total, 0);
+  type PaidOrder = (typeof paidOrders)[number];
+  const totalRevenue = paidOrders.reduce((s: number, o: PaidOrder) => s + o.total, 0);
   const totalOrders = paidOrders.length;
   const todayRevenue = paidOrders
-    .filter((o) => o.closedAt && o.closedAt >= today)
-    .reduce((s, o) => s + o.total, 0);
+    .filter((o: PaidOrder) => o.closedAt && o.closedAt >= today)
+    .reduce((s: number, o: PaidOrder) => s + o.total, 0);
 
   // ── Top / bottom items ──
   const itemMap = new Map<string, { name: string; category: string; qty: number; revenue: number }>();
@@ -121,10 +122,12 @@ export async function GET(req: NextRequest) {
   const bottomItems = sorted.length > 5 ? sorted.slice(-5).reverse() : [];
 
   // ── Stock valuation ──
-  const kitchenValue = ingredients.reduce((s, i) => s + i.currentStock * i.costPerUnit, 0);
-  const fohValue = fohItems.reduce((s, i) => s + i.currentStock * i.costPerUnit, 0);
-  const lowStock = ingredients.filter((i) => i.currentStock > 0 && i.currentStock <= i.reorderPoint).length;
-  const outOfStock = ingredients.filter((i) => i.currentStock <= 0).length;
+  type Ingredient = (typeof ingredients)[number];
+  type FohItem = (typeof fohItems)[number];
+  const kitchenValue = ingredients.reduce((s: number, i: Ingredient) => s + i.currentStock * i.costPerUnit, 0);
+  const fohValue = fohItems.reduce((s: number, i: FohItem) => s + i.currentStock * i.costPerUnit, 0);
+  const lowStock = ingredients.filter((i: Ingredient) => i.currentStock > 0 && i.currentStock <= i.reorderPoint).length;
+  const outOfStock = ingredients.filter((i: Ingredient) => i.currentStock <= 0).length;
 
   // ── Waste by category ──
   const kitchenWaste = wasteTxns.filter((t) => t.itemType === "KITCHEN");
@@ -190,8 +193,8 @@ export async function GET(req: NextRequest) {
     },
     wasteReport,
     ordersByType: {
-      dineIn: paidOrders.filter((o) => o.type === "DINE_IN").length,
-      takeaway: paidOrders.filter((o) => o.type === "TAKEAWAY").length,
+      dineIn: paidOrders.filter((o: PaidOrder) => o.type === "DINE_IN").length,
+      takeaway: paidOrders.filter((o: PaidOrder) => o.type === "TAKEAWAY").length,
     },
   });
 }

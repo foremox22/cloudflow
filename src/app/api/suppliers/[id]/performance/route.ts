@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const avgPriceVariance =
     priceVariances.length > 0
-      ? Math.round(priceVariances.reduce((s, v) => s + v.poPricePct, 0) / priceVariances.length)
+      ? Math.round(priceVariances.reduce((s: number, v) => s + v.poPricePct, 0) / priceVariances.length)
       : null;
 
   return NextResponse.json({
@@ -53,7 +53,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       createdAt: p.createdAt,
       expectedAt: p.expectedAt,
       receivedAt: p.receivedAt,
-      total: p.lineItems.reduce((s, l) => s + l.quantity * l.unitPrice, 0),
+      total: p.lineItems.reduce((s: number, l) => s + l.quantity * l.unitPrice, 0),
     })),
   });
 }

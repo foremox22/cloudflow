@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   });
   if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const subtotal = current.items.filter((i) => i.status !== "VOID").reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const subtotal = current.items.filter((i) => i.status !== "VOID").reduce((s: number, i) => s + i.unitPrice * i.quantity, 0);
   const tax = subtotal * 0.1;
   const discount = parsed.data.discount ?? current.discount;
   const total = subtotal + tax - discount;
