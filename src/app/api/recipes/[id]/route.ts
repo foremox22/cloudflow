@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getRestaurantId } from "@/lib/restaurant";
@@ -79,7 +80,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { ingredients, allergenIds, ...data } = parsed.data;
   const userId = session.user.id;
 
-  const recipe = await db.$transaction(async (tx) => {
+  const recipe = await db.$transaction(async (tx: Prisma.TransactionClient) => {
     if (ingredients !== undefined) {
       await tx.recipeIngredient.deleteMany({ where: { recipeId: id } });
     }

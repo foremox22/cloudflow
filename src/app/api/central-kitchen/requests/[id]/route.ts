@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -63,7 +64,7 @@ export async function PATCH(
 
   const { neededBy, notes, items } = parsed.data;
 
-  await db.$transaction(async (tx) => {
+  await db.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.distributionRequest.update({
       where: { id },
       data: {

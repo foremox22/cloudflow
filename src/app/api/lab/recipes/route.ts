@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -122,7 +123,7 @@ export async function PUT(req: NextRequest) {
 
   const recipeRestaurantId = labSessForIngredients?.restaurantId ?? "";
 
-  const recipe = await db.$transaction(async (tx) => {
+  const recipe = await db.$transaction(async (tx: Prisma.TransactionClient) => {
 
     const newRecipe = await tx.recipe.create({
       data: {

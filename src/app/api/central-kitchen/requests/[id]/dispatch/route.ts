@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -31,7 +32,7 @@ export async function POST(
 
   const { dispatchedQtys } = parsed.data;
 
-  await db.$transaction(async (tx) => {
+  await db.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const [itemId, qty] of Object.entries(dispatchedQtys)) {
       const item = request.items.find((i) => i.id === itemId);
       if (!item || qty <= 0) continue;

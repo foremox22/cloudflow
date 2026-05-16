@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getRestaurantId } from "@/lib/restaurant";
@@ -31,7 +32,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const snap = versionRecord.snapshotJson as any;
 
-  const recipe = await db.$transaction(async (tx) => {
+  const recipe = await db.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.recipeIngredient.deleteMany({ where: { recipeId: id } });
     await tx.recipeAllergen.deleteMany({ where: { recipeId: id } });
 
