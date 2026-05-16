@@ -19,10 +19,10 @@ export default async function MasterRecipesPage() {
     include: { restaurant: { select: { id: true, name: true, type: true } } },
     orderBy: { restaurant: { createdAt: "asc" } },
   });
-  const adminRestaurantIds = allMemberships.map((m: { restaurantId: string }) => m.restaurantId);
+  const adminRestaurantIds = allMemberships.map((m) => m.restaurantId);
+  const restaurants = allMemberships.map((m) => m.restaurant);
 
-  const [recipes, ingredients, allergens] = await Promise.all([
-    // ALL recipes across all admin-managed restaurants
+  const [rawRecipes, ingredients, allergens] = await Promise.all([
     db.recipe.findMany({
       where: { restaurantId: { in: adminRestaurantIds }, active: true },
       include: {
@@ -37,18 +37,7 @@ export default async function MasterRecipesPage() {
         restaurant: { select: { id: true, name: true } },
       },
       orderBy: { updatedAt: "desc" },
-    }).then((list) =>
-      list.map((r) => ({
-        ...r,
-        costPerServing:
-          r.servings > 0
-            ? r.ingredients.reduce((sum, ri) => {
-                const baseQty = convertToIngredientUnit(ri.quantity, ri.unit, ri.ingredient.unit);
-                return sum + ri.ingredient.costPerUnit * baseQty / (ri.ingredient.yieldRate ?? 1);
-              }, 0) / r.servings
-            : 0,
-      }))
-    ),
+    }),
     restaurantId
       ? db.ingredient.findMany({
           where: { restaurantId, active: true },
@@ -59,7 +48,16 @@ export default async function MasterRecipesPage() {
     db.allergen.findMany({ orderBy: { name: "asc" } }),
   ]);
 
-  const restaurants = allMemberships.map((m) => m.restaurant);
+  const recipes = rawRecipes.map((r) => ({
+    ...r,
+    costPerServing:
+      r.servings > 0
+        ? r.ingredients.reduce((sum, ri) => {
+            const baseQty = convertToIngredientUnit(ri.quantity, ri.unit, ri.ingredient.unit);
+            return sum + ri.ingredient.costPerUnit * baseQty / (ri.ingredient.yieldRate ?? 1);
+          }, 0) / r.servings
+        : 0,
+  }));
 
   return (
     <>
