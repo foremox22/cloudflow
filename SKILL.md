@@ -94,6 +94,11 @@ const raw = await db.recipe.findMany({...});
 const result = raw.map((r: (typeof raw)[number]) => ({ ...r, extra: true }));
 ```
 
+// Prisma $transaction callback — Prisma namespace NOT exported in Prisma 7, derive type from db instead
+// ❌ import { Prisma } from "@prisma/client" — Prisma.TransactionClient does not exist
+// ✅ correct:
+db.$transaction(async (tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => { ... })
+
 // .filter() / .sort() before or after .map() drops the type for the whole chain — type EVERY callback
 type FoodCost = { foodCostPct: number };
 items.filter((r: Recipe) => r.active).map((r: Recipe) => ({...})).sort((a: FoodCost, b: FoodCost) => b.foodCostPct - a.foodCostPct)
