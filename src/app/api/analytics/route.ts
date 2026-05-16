@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
     e.qty += item.quantity;
     e.revenue += item.quantity * item.unitPrice;
   }
-  const sorted = Array.from(itemMap.values()).sort((a, b) => b.qty - a.qty);
+  const sorted = Array.from(itemMap.values()).sort((a: { qty: number }, b: { qty: number }) => b.qty - a.qty);
   type SortedItem = (typeof sorted)[number];
   const topItems = sorted.slice(0, 10).map((i: SortedItem) => ({ ...i, revenue: Math.round(i.revenue * 100) / 100 }));
   const bottomItems = sorted.length > 5 ? sorted.slice(-5).reverse() : [];
@@ -153,7 +153,7 @@ export async function GET(req: NextRequest) {
   }
   const wasteReport = Array.from(wasteCatMap.entries())
     .map(([category, v]) => ({ category, qty: Math.round(v.qty * 100) / 100, cost: Math.round(v.cost * 100) / 100 }))
-    .sort((a, b) => b.cost - a.cost);
+    .sort((a: { cost: number }, b: { cost: number }) => b.cost - a.cost);
 
   // ── Recipe food costs ──
   type Recipe = (typeof recipes)[number];
@@ -175,7 +175,7 @@ export async function GET(req: NextRequest) {
         foodCostPct: Math.round(foodCostPct * 10) / 10,
       };
     })
-    .sort((a, b) => b.foodCostPct - a.foodCostPct)
+    .sort((a: { foodCostPct: number }, b: { foodCostPct: number }) => b.foodCostPct - a.foodCostPct)
     .slice(0, 15);
 
   return NextResponse.json({
