@@ -19,7 +19,7 @@ export default async function MasterRecipesPage() {
     include: { restaurant: { select: { id: true, name: true, type: true } } },
     orderBy: { restaurant: { createdAt: "asc" } },
   });
-  const adminRestaurantIds = allMemberships.map((m) => m.restaurantId);
+  const adminRestaurantIds = allMemberships.map((m: { restaurantId: string }) => m.restaurantId);
 
   const [recipes, ingredients, allergens] = await Promise.all([
     // ALL recipes across all admin-managed restaurants

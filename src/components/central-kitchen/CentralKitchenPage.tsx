@@ -540,6 +540,7 @@ function DemandView({ demand }: { demand: DemandRow[] }) {
 function LinksView({ links, isCK, onRefresh, toast }: {
   links: LinksData | null; isCK: boolean; onRefresh: () => void; toast: ReturnType<typeof useToast>;
 }) {
+  const confirm = useConfirm();
   const [saving, setSaving] = useState(false);
 
   async function link(ckId: string) {
