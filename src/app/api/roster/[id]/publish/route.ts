@@ -59,7 +59,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     Array.from(userMap.entries()).map(async ([userId, user]) => {
       const invite = inviteMap.get(userId)!;
       const confirmUrl = `${appUrl}/roster/confirm/${invite.token}`;
-      const userShifts = roster.shifts.filter((s) => s.userId === userId);
+      type RosterShift = (typeof roster.shifts)[number];
+      const userShifts = roster.shifts.filter((s: RosterShift) => s.userId === userId);
       const userShiftCount = userShifts.length;
 
       await Promise.all([
