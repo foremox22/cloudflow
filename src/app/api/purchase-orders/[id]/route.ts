@@ -58,7 +58,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const existingPo = await db.purchaseOrder.findFirst({ where: { id, restaurantId } });
   if (!existingPo) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const po = await db.$transaction(async (prisma) => {
+  const po = await db.$transaction(async (prisma: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => {
     if (lineItems) {
       await prisma.poLineItem.deleteMany({ where: { poId: id } });
       await prisma.poLineItem.createMany({ data: lineItems.map((l: (typeof lineItems)[number]) => ({ ...l, poId: id })) });

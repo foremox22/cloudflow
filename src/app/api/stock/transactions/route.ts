@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
   const { itemType, itemId, type, quantity, notes } = parsed.data;
 
-  const tx = await db.$transaction(async (prisma) => {
+  const tx = await db.$transaction(async (prisma: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => {
     const transaction = await prisma.stockTransaction.create({
       data: { restaurantId, itemType, itemId, type, quantity, notes: notes ?? null, createdById: userId },
       include: { createdBy: { select: { name: true } } },

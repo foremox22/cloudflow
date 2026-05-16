@@ -57,7 +57,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
-  await db.$transaction(async (prisma) => {
+  await db.$transaction(async (prisma: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => {
     for (const li of po.lineItems) {
       const qty = receivedQtys?.[li.id] ?? li.quantity;
       if (qty <= 0) continue;
