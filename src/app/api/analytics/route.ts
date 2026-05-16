@@ -156,10 +156,12 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => b.cost - a.cost);
 
   // ── Recipe food costs ──
+  type Recipe = (typeof recipes)[number];
+  type RecipeIng = Recipe["ingredients"][number];
   const recipeFoodCosts = recipes
-    .filter((r) => r.sellingPrice > 0)
-    .map((r: (typeof recipes)[number]) => {
-      const totalCost = r.ingredients.reduce((s: number, ri: (typeof r.ingredients)[number]) => {
+    .filter((r: Recipe) => r.sellingPrice > 0)
+    .map((r: Recipe) => {
+      const totalCost = r.ingredients.reduce((s: number, ri: RecipeIng) => {
         const conv = convertUnit(ri.quantity, ri.unit, ri.ingredient.unit);
         const eff = conv / (ri.ingredient.yieldRate ?? 1);
         return s + eff * ri.ingredient.costPerUnit;

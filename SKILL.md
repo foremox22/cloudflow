@@ -94,6 +94,10 @@ const raw = await db.recipe.findMany({...});
 const result = raw.map((r: (typeof raw)[number]) => ({ ...r, extra: true }));
 ```
 
+// .filter() before .map() drops the type for the whole chain — type EVERY callback in the chain
+type Recipe = (typeof recipes)[number];
+recipes.filter((r: Recipe) => r.active).map((r: Recipe) => ({ ...r }))
+
 // ternary returning Prisma result | never[] — TypeScript resolves to {} — always annotate explicitly
 type WasteIngredient = { id: string; category: string; costPerUnit: number };
 const items: WasteIngredient[] = condition
