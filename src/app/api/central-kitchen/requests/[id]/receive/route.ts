@@ -33,7 +33,8 @@ export async function POST(
 
   await db.$transaction(async (tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => {
     for (const [itemId, qty] of Object.entries(receivedQtys)) {
-      const item = request.items.find((i) => i.id === itemId);
+      type RequestItem = (typeof request.items)[number];
+      const item = request.items.find((i: RequestItem) => i.id === itemId);
       if (!item || qty <= 0) continue;
 
       // Find matching ingredient in this restaurant by name
