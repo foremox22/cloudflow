@@ -8,7 +8,7 @@ import RecipeFormModal from "./RecipeFormModal";
 import { useConfirm } from "@/lib/confirm";
 import RecipeDetailModal from "./RecipeDetailModal";
 import { DIETARY_TAG_COLORS, DIETARY_TAG_LABELS, CATEGORY_COLORS } from "@/lib/colors";
-import type { RecipeCategory } from "@prisma/client";
+import type { RecipeCategory } from "@/types";
 
 function calcCost(recipe: any): number {
   return recipe.servings > 0

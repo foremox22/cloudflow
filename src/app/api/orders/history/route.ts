@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getRestaurantId } from "@/lib/restaurant";
-import type { Prisma } from "@prisma/client";
+type OrderWhereInput = NonNullable<Parameters<typeof db.order.findMany>[0]>["where"];
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
   const limit = 50;
 
-  const dateFilter: Prisma.OrderWhereInput =
+  const dateFilter: OrderWhereInput =
     from || to
       ? {
           closedAt: {
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
         }
       : {};
 
-  const baseWhere: Prisma.OrderWhereInput = {
+  const baseWhere: OrderWhereInput = {
     restaurantId,
     status: { in: ["PAID", "VOID"] },
     ...dateFilter,

@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getRestaurantId } from "@/lib/restaurant";
 import type { AIRecipeData } from "@/types";
-import { RecipeCategory, Unit } from "@prisma/client";
+import type { RecipeCategory, Unit } from "@/types";
 
 export async function GET() {
   const session = await auth();
@@ -141,8 +141,9 @@ export async function PUT(req: NextRequest) {
     });
 
     for (const ing of data.ingredients ?? []) {
+      type LocalIngredient = (typeof allIngredients)[number];
       const found = allIngredients.find(
-        (i) => i.name.toLowerCase() === ing.name.toLowerCase()
+        (i: LocalIngredient) => i.name.toLowerCase() === ing.name.toLowerCase()
       );
       if (found) {
         await tx.recipeIngredient.create({
