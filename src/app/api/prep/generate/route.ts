@@ -28,12 +28,13 @@ export async function POST(req: NextRequest) {
   });
 
   // Filter to routines scheduled for today
-  const todayRoutines = routines.filter((r) => r.daysOfWeek.includes(todayDow));
+  type Routine = (typeof routines)[number];
+  const todayRoutines = routines.filter((r: Routine) => r.daysOfWeek.includes(todayDow));
 
   if (todayRoutines.length === 0) return NextResponse.json({ created: 0 });
 
   // Batch fetch existing tasks for all relevant ingredients (eliminates N+1)
-  const ingredientIds = todayRoutines.map((r: (typeof todayRoutines)[number]) => r.ingredientId);
+  const ingredientIds = todayRoutines.map((r: Routine) => r.ingredientId);
   const existingTasks = await db.prepTask.findMany({
     where: {
       restaurantId,
@@ -49,12 +50,12 @@ export async function POST(req: NextRequest) {
   const existingIngredientIds = new Set(existingTasks.map((t: (typeof existingTasks)[number]) => t.ingredientId));
 
   // Filter to routines without existing tasks
-  const routinesToCreate = todayRoutines.filter((r) => !existingIngredientIds.has(r.ingredientId));
+  const routinesToCreate = todayRoutines.filter((r: Routine) => !existingIngredientIds.has(r.ingredientId));
 
   if (routinesToCreate.length === 0) return NextResponse.json({ created: 0 });
 
   // Batch create all tasks
-  const tasksData = routinesToCreate.map((routine) => {
+  const tasksData = routinesToCreate.map((routine: Routine) => {
     const [hours, minutes] = routine.triggerTime.split(":").map(Number);
     const scheduledFor = new Date(todayStart);
     scheduledFor.setUTCHours(hours, minutes, 0, 0);
