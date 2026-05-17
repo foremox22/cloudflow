@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Building2, ChevronDown, Check, Plus, X, Lock } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 interface Restaurant {
@@ -25,7 +26,9 @@ interface Props {
 }
 
 export default function RestaurantSwitcher({ collapsed = false }: Props) {
+  const { data: session } = useSession();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState("");
@@ -36,8 +39,8 @@ export default function RestaurantSwitcher({ collapsed = false }: Props) {
   function load() {
     fetch("/api/restaurants")
       .then((r) => r.json())
-      .then(setRestaurants)
-      .catch(() => null);
+      .then((data: Restaurant[]) => { setRestaurants(data); setLoaded(true); })
+      .catch(() => setLoaded(true));
   }
 
   useEffect(() => { load(); }, []);
@@ -84,9 +87,33 @@ export default function RestaurantSwitcher({ collapsed = false }: Props) {
   }
 
   const active = restaurants.find((r) => r.active) ?? restaurants[0];
-  const isAdmin = active?.role === "ADMIN";
+  const sessionRole = (session?.user as { role?: string } | undefined)?.role;
+  const isAdmin = active?.role === "ADMIN" || sessionRole === "ADMIN";
 
-  if (restaurants.length === 0) return null;
+  // Auto-open create modal for admins with no restaurant yet
+  useEffect(() => {
+    if (loaded && restaurants.length === 0 && sessionRole === "ADMIN") {
+      setShowModal(true);
+    }
+  }, [loaded, restaurants.length, sessionRole]);
+
+  if (!loaded) return null;
+  if (restaurants.length === 0 && sessionRole !== "ADMIN") return null;
+  if (restaurants.length === 0) {
+    // Admin with no restaurant — render only the modal (triggered by useEffect above)
+    return showModal ? (
+      <CreateRestaurantModal
+        newName={newName} setNewName={setNewName}
+        newType={newType} setNewType={setNewType}
+        saving={saving} onClose={() => setShowModal(false)}
+        onCreate={createRestaurant}
+      />
+    ) : (
+      <button onClick={openModal} className="flex items-center gap-2 px-3 py-2 text-xs text-orange-400 hover:text-orange-300 transition-colors">
+        <Plus size={13} /> Create restaurant
+      </button>
+    );
+  }
 
   // ── Non-admin: static label, no dropdown ──────────────────────────────────
   if (!isAdmin) {
@@ -180,93 +207,91 @@ export default function RestaurantSwitcher({ collapsed = false }: Props) {
         )}
       </div>
 
-      {/* ── New Restaurant Modal ── */}
       {showModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowModal(false)}
-          />
-
-          <div className="relative bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                  <Building2 size={15} className="text-orange-400" />
-                </div>
-                <h2 className="text-white font-semibold text-base">New Restaurant</h2>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                Restaurant Name <span className="text-red-400">*</span>
-              </label>
-              <input
-                autoFocus
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) createRestaurant(); }}
-                placeholder="e.g. The Garden Café"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
-              />
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-xs font-medium text-gray-400 mb-2">
-                Restaurant Type <span className="text-red-400">*</span>
-              </label>
-              <div className="flex flex-col gap-2">
-                {RESTAURANT_TYPES.map((t) => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => setNewType(t.value)}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors text-left",
-                      newType === t.value
-                        ? "border-orange-500 bg-orange-500/10 text-orange-300"
-                        : "border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600 hover:text-gray-300"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
-                      newType === t.value ? "border-orange-500" : "border-gray-600"
-                    )}>
-                      {newType === t.value && (
-                        <div className="w-2 h-2 rounded-full bg-orange-500" />
-                      )}
-                    </div>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2.5 rounded-lg border border-gray-700 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={createRestaurant}
-                disabled={!newName.trim() || saving}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-orange-500 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {saving ? "Creating…" : "Create Restaurant"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <CreateRestaurantModal
+          newName={newName} setNewName={setNewName}
+          newType={newType} setNewType={setNewType}
+          saving={saving} onClose={() => setShowModal(false)}
+          onCreate={createRestaurant}
+        />
       )}
     </>
+  );
+}
+
+function CreateRestaurantModal({ newName, setNewName, newType, setNewType, saving, onClose, onCreate }: {
+  newName: string; setNewName: (v: string) => void;
+  newType: RestaurantTypeValue; setNewType: (v: RestaurantTypeValue) => void;
+  saving: boolean; onClose: () => void; onCreate: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+              <Building2 size={15} className="text-orange-400" />
+            </div>
+            <h2 className="text-white font-semibold text-base">New Restaurant</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-400 mb-1.5">
+            Restaurant Name <span className="text-red-400">*</span>
+          </label>
+          <input
+            autoFocus
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && newName.trim()) onCreate(); }}
+            placeholder="e.g. The Garden Café"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
+          />
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-xs font-medium text-gray-400 mb-2">
+            Restaurant Type <span className="text-red-400">*</span>
+          </label>
+          <div className="flex flex-col gap-2">
+            {RESTAURANT_TYPES.map((t) => (
+              <button
+                key={t.value} type="button" onClick={() => setNewType(t.value)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors text-left",
+                  newType === t.value
+                    ? "border-orange-500 bg-orange-500/10 text-orange-300"
+                    : "border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600 hover:text-gray-300"
+                )}
+              >
+                <div className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
+                  newType === t.value ? "border-orange-500" : "border-gray-600"
+                )}>
+                  {newType === t.value && <div className="w-2 h-2 rounded-full bg-orange-500" />}
+                </div>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-gray-700 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white transition-colors">
+            Cancel
+          </button>
+          <button onClick={onCreate} disabled={!newName.trim() || saving}
+            className="flex-1 px-4 py-2.5 rounded-lg bg-orange-500 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? "Creating…" : "Create Restaurant"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
